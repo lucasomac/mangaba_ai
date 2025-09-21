@@ -7,8 +7,8 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
-    name="mangaba-ai",
-    version="1.0.0",
+    name="mangaba",
+    version="1.0.1dev",
     author="Mangaba AI Team",
     author_email="contato@mangaba.ai",
     description="Agente de IA inteligente e versátil",
