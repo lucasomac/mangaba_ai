@@ -133,19 +133,19 @@ class QuickSetup:
     
     def upgrade_pip(self) -> bool:
         """Atualiza pip no ambiente virtual"""
-        pip_path = self.get_venv_pip()
-        if not pip_path:
+        python_path = self.get_venv_python()
+        if not python_path:
             self.log_step(
                 "Atualizar pip",
                 False,
-                "pip não encontrado no ambiente virtual"
+                "python não encontrado no ambiente virtual"
             )
             return False
         
         try:
             print("[INFO] Atualizando pip...")
             subprocess.run(
-                [pip_path, 'install', '--upgrade', 'pip'],
+                [python_path, '-m', 'pip', 'install', '--upgrade', 'pip'],
                 check=True,
                 capture_output=True
             )
