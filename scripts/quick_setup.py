@@ -33,7 +33,7 @@ class QuickSetup:
         self.project_root = Path(__file__).parent.parent
         self.env_file = self.project_root / '.env'
         self.env_template = self.project_root / '.env.template'
-        self.venv_path = self.project_root / 'venv'
+        self.venv_path = self.project_root / '.venv'
         self.steps_completed = []
         self.errors = []
     
@@ -382,7 +382,7 @@ except Exception as e:
             )
             return False
         
-        validate_script = self.project_root / "validate_env.py"
+        validate_script = self.project_root / "scripts" / "validate_env.py"
         if not validate_script.exists():
             self.log_step(
                 "Validação Final",
@@ -394,7 +394,7 @@ except Exception as e:
         try:
             print("[INFO] Executando validação final...")
             result = subprocess.run(
-                [python_path, str(validate_script), '--json-output'],
+                [python_path, str(validate_script), '--save-report'],
                 cwd=str(self.project_root),
                 capture_output=True,
                 text=True,
@@ -404,8 +404,8 @@ except Exception as e:
             if result.returncode == 0:
                 # Parse JSON output
                 try:
-                    validation_result = json.loads(result.stdout)
-                    if validation_result.get('summary', {}).get('valid', False):
+                    validation_result = json.loads((self.project_root / 'validation_report.json').read_text(encoding='utf-8'))
+                    if validation_result.get('summary', {}).get('total_tests', False) == validation_result.get('summary', {}).get('ok_count', False):
                         self.log_step(
                             "Validação Final",
                             True,
