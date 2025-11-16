@@ -25,13 +25,15 @@ Repositório minimalista para criação de agentes de IA inteligentes e versáte
 
 ```bash
 # Instalação completa em um comando
-uv sync
+.\uv sync
 
 # Executar exemplo
-uv run python examples/basic_example.py
+.\uv run python examples/basic_example.py
 ```
 
-> 🎯 **UV é 10-100x mais rápido que pip!** [Saiba mais](docs/UV_SETUP.md)
+> 🎯 **UV é 10-100x mais rápido que pip!** [Saiba mais](COMO_USAR_UV.md)
+> 
+> **Dica Windows:** Use `.\uv` ou configure conforme [guia de UV](COMO_USAR_UV.md#-fluxo-de-trabalho-typical)
 
 ### Opção 2: Configuração Automática (com pip)
 
