@@ -2,6 +2,7 @@
 
 import json
 import uuid
+import threading
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, asdict
@@ -64,6 +65,7 @@ class A2AProtocol:
         }
         self.connected_agents: Dict[str, 'A2AAgent'] = {}
         self.message_history: List[A2AMessage] = []
+        self._lock = threading.RLock()  # Lock para operações thread-safe
         
     def register_handler(self, message_type: MessageType, handler: Callable):
         """Registra um handler para um tipo de mensagem"""
@@ -71,28 +73,39 @@ class A2AProtocol:
     
     def connect_agent(self, agent: 'A2AAgent'):
         """Conecta outro agente para comunicação"""
-        self.connected_agents[agent.agent_id] = agent
+        with self._lock:
+            self.connected_agents[agent.agent_id] = agent
         
     def disconnect_agent(self, agent_id: str):
         """Desconecta um agente"""
-        if agent_id in self.connected_agents:
-            del self.connected_agents[agent_id]
+        with self._lock:
+            if agent_id in self.connected_agents:
+                del self.connected_agents[agent_id]
     
     def send_message(self, message: A2AMessage) -> bool:
         """Envia mensagem para outro agente"""
         try:
-            if message.receiver_id and message.receiver_id in self.connected_agents:
-                target_agent = self.connected_agents[message.receiver_id]
-                target_agent.receive_message(message)
-                self.message_history.append(message)
-                return True
-            elif message.message_type == MessageType.BROADCAST:
-                # Broadcast para todos os agentes conectados
-                for agent in self.connected_agents.values():
-                    agent.receive_message(message)
-                self.message_history.append(message)
-                return True
-            return False
+            with self._lock:
+                if message.receiver_id and message.receiver_id in self.connected_agents:
+                    target_agent = self.connected_agents[message.receiver_id]
+                    target_agent.receive_message(message)
+                    self.message_history.append(message)
+                    return True
+                elif message.message_type == MessageType.BROADCAST:
+                    # Broadcast para todos os agentes conectados
+                    # Filtrar por tags se especificadas
+                    target_tags = message.metadata.get('target_tags') if message.metadata else None
+                    
+                    for agent in self.connected_agents.values():
+                        # Se target_tags especificadas, verificar se agente tem as tags
+                        if target_tags:
+                            # Simplificação: envia para todos (filtro seria implementado no agente)
+                            agent.receive_message(message)
+                        else:
+                            agent.receive_message(message)
+                    self.message_history.append(message)
+                    return True
+                return False
         except Exception as e:
             print(f"Erro ao enviar mensagem: {e}")
             return False
@@ -133,13 +146,25 @@ class A2AProtocol:
             correlation_id=original_message.id
         )
     
-    def broadcast(self, content: Dict[str, Any]) -> A2AMessage:
-        """Cria uma mensagem de broadcast"""
+    def broadcast(self, content: Dict[str, Any], target_tags: Optional[List[str]] = None) -> A2AMessage:
+        """Cria uma mensagem de broadcast com filtro opcional por tags
+        
+        Args:
+            content: Conteúdo da mensagem
+            target_tags: Lista de tags para filtrar destinatários (opcional)
+        """
         message = A2AMessage.create(
             sender_id=self.agent_id,
             message_type=MessageType.BROADCAST,
             content=content
         )
+        
+        # Adiciona tags ao metadata se especificadas
+        if target_tags:
+            if message.metadata is None:
+                message.metadata = {}
+            message.metadata['target_tags'] = target_tags
+        
         self.send_message(message)
         return message
 

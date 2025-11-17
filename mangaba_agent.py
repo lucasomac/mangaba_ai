@@ -31,9 +31,22 @@ class MangabaAgent(A2AAgent):
         if self.mcp_enabled:
             self.mcp = MCPProtocol()
             self.current_session_id = self.mcp.create_session(f"session_{self.agent_id}")
+            
+            # Validar se sessão foi criada com sucesso
+            if not self.current_session_id or self.current_session_id not in self.mcp.sessions:
+                self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
+                self.logger.error("❌ Falha ao criar sessão MCP")
+                self.mcp_enabled = False
+            else:
+                self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
+                self.logger.info(f"✅ Sessão MCP criada: {self.current_session_id}")
+        else:
+            # Logger
+            self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
         
-        # Logger
-        self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
+        if not hasattr(self, 'logger'):
+            # Logger
+            self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
         self.logger.info(f"✅ Agente inicializado - ID: {self.agent_id}, Modelo: {self.model_name}")
         
         # Configurações A2A específicas
@@ -61,6 +74,10 @@ class MangabaAgent(A2AAgent):
                 result = self.get_context_summary()
             else:
                 result = f"Ação '{action}' não reconhecida"
+                response = self.a2a_protocol.create_response(message, result, False)
+                self.logger.warning(f"⚠️  Ação desconhecida recebida: {action}")
+                self.a2a_protocol.send_message(response)
+                return
             
             response = self.a2a_protocol.create_response(message, result, True)
         except Exception as e:
@@ -203,15 +220,11 @@ class MangabaAgent(A2AAgent):
             return "Contexto MCP não está habilitado"
         
         try:
-            # Fix: Substituindo get_session pelo método correto para obter sessão
+            # Obter sessão atual
             session = self.mcp.sessions.get(self.current_session_id)
             if not session:
                 return "Nenhuma sessão ativa encontrada"
             
-            # Fix: Verificando se método get_session_contexts existe antes de chamar
-            if not hasattr(self.mcp, 'get_session_contexts'):
-                return "Erro: Método get_session_contexts não existe no protocolo MCP atual"
-                
             contexts = self.mcp.get_session_contexts(self.current_session_id)
             if not contexts:
                 return "Nenhum contexto encontrado na sessão atual"
@@ -255,10 +268,6 @@ class MangabaAgent(A2AAgent):
             if params is None:
                 params = {}
             
-            # Fix: Corrigindo uso de create_request com argumentos obrigatórios corretos
-            if not hasattr(self.a2a_protocol, 'create_request'):
-                return "Erro: Método create_request não existe no protocolo A2A atual"
-                
             request = self.a2a_protocol.create_request(
                 target_agent_id,
                 action,
@@ -280,10 +289,6 @@ class MangabaAgent(A2AAgent):
             if tags is None:
                 tags = ["general"]
             
-            # Fix: Substituindo create_broadcast pelo método correto broadcast
-            if not hasattr(self.a2a_protocol, 'broadcast'):
-                return "Erro: Método broadcast não existe no protocolo A2A atual"
-                
             self.a2a_protocol.broadcast(
                 {
                     "message": message,
@@ -295,7 +300,6 @@ class MangabaAgent(A2AAgent):
                 }
             )
             
-            # O método broadcast já envia a mensagem automaticamente
             self.logger.info(f"📢 Broadcast enviado: {message[:50]}...")
             
             return f"Broadcast enviado com sucesso"
@@ -308,16 +312,6 @@ class MangabaAgent(A2AAgent):
         """Chat com contexto específico."""
         full_prompt = f"Contexto: {context}\n\nUsuário: {message}"
         return self.chat(full_prompt)
-    
-    def analyze_text(self, text: str, instruction: str = "Analise este texto") -> str:
-        """Analisa um texto com instrução específica."""
-        prompt = f"{instruction}:\n\n{text}"
-        return self.chat(prompt)
-    
-    def translate(self, text: str, target_language: str = "português") -> str:
-        """Traduz texto para idioma especificado."""
-        prompt = f"Traduza o seguinte texto para {target_language}:\n\n{text}"
-        return self.chat(prompt)
     
     def summarize(self, text: str, max_sentences: int = 3) -> str:
         """Resume texto em número específico de frases."""

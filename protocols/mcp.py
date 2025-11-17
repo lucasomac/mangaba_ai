@@ -2,11 +2,12 @@
 
 import json
 import uuid
+import threading
+import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict
 from enum import Enum
-import hashlib
 
 class ContextType(Enum):
     """Tipos de contexto MCP"""
@@ -141,30 +142,32 @@ class MCPProtocol:
         self.sessions: Dict[str, MCPSession] = {}
         self.max_contexts = max_contexts
         self.context_index: Dict[str, List[str]] = {}  # tag -> context_ids
+        self._lock = threading.RLock()  # Lock para operações thread-safe
         
     def add_context(self, context: MCPContext, session_id: Optional[str] = None) -> str:
         """Adiciona um contexto ao protocolo MCP"""
-        # Remove contextos expirados se necessário
-        self._cleanup_expired_contexts()
-        
-        # Remove contextos antigos se exceder o limite
-        if len(self.contexts) >= self.max_contexts:
-            self._remove_oldest_contexts()
-        
-        self.contexts[context.id] = context
-        
-        # Adiciona à sessão se especificada
-        if session_id and session_id in self.sessions:
-            self.sessions[session_id].context_ids.append(context.id)
-            self.sessions[session_id].updated_at = datetime.now().isoformat()
-        
-        # Atualiza índice de tags
-        for tag in context.tags:
-            if tag not in self.context_index:
-                self.context_index[tag] = []
-            self.context_index[tag].append(context.id)
-        
-        return context.id
+        with self._lock:
+            # Remove contextos expirados se necessário
+            self._cleanup_expired_contexts()
+            
+            # Remove contextos antigos se exceder o limite
+            if len(self.contexts) >= self.max_contexts:
+                self._remove_oldest_contexts()
+            
+            self.contexts[context.id] = context
+            
+            # Adiciona à sessão se especificada
+            if session_id and session_id in self.sessions:
+                self.sessions[session_id].context_ids.append(context.id)
+                self.sessions[session_id].updated_at = datetime.now().isoformat()
+            
+            # Atualiza índice de tags
+            for tag in context.tags:
+                if tag not in self.context_index:
+                    self.context_index[tag] = []
+                self.context_index[tag].append(context.id)
+            
+            return context.id
     
     def get_context(self, context_id: str) -> Optional[MCPContext]:
         """Recupera um contexto pelo ID"""
@@ -220,9 +223,10 @@ class MCPProtocol:
     
     def create_session(self, name: str) -> str:
         """Cria uma nova sessão"""
-        session = MCPSession.create(name)
-        self.sessions[session.id] = session
-        return session.id
+        with self._lock:
+            session = MCPSession.create(name)
+            self.sessions[session.id] = session
+            return session.id
     
     def get_session_contexts(self, session_id: str) -> List[MCPContext]:
         """Recupera todos os contextos de uma sessão"""
