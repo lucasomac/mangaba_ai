@@ -3,7 +3,7 @@ Agent implementation with role, goal, and backstory support
 """
 
 import uuid
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 import google.generativeai as genai
 from datetime import datetime
 
@@ -11,6 +11,9 @@ from config import config
 from utils.logger import get_logger
 from protocols.a2a import A2AAgent, A2AMessage, MessageType
 from protocols.mcp import MCPProtocol, MCPContext, ContextType, ContextPriority
+
+if TYPE_CHECKING:
+    from mangaba.tools.base import BaseTool
 
 
 class Agent(A2AAgent):

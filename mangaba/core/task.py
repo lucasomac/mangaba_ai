@@ -3,11 +3,15 @@ Task implementation for structured workflow orchestration
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any, Callable, TYPE_CHECKING
 from datetime import datetime
 import uuid
 
 from utils.logger import get_logger
+
+if TYPE_CHECKING:
+    from mangaba.core.agent import Agent
+    from mangaba.tools.base import BaseTool
 
 
 @dataclass

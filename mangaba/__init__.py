@@ -8,6 +8,19 @@ from mangaba.core.agent import Agent
 from mangaba.core.task import Task
 from mangaba.core.crew import Crew, Process
 from mangaba.tools.base import BaseTool
+from mangaba.tools.web_search import SerperSearchTool, DuckDuckGoSearchTool
+from mangaba.tools.file_tools import FileReaderTool, FileWriterTool, DirectoryListTool
 
 __version__ = "2.0.0"
-__all__ = ["Agent", "Task", "Crew", "Process", "BaseTool"]
+__all__ = [
+    "Agent",
+    "Task",
+    "Crew",
+    "Process",
+    "BaseTool",
+    "SerperSearchTool",
+    "DuckDuckGoSearchTool",
+    "FileReaderTool",
+    "FileWriterTool",
+    "DirectoryListTool",
+]

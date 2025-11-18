@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mangaba"
-version = "1.0.2"
-description = "Agente de IA inteligente e versátil com protocolos A2A (Agent-to-Agent) e MCP (Model Context Protocol)"
+version = "2.0.0"
+description = "Framework de Agentes IA com Multi-Agent Orchestration, Protocolos A2A e MCP"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -46,6 +46,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+tools = [
+    "duckduckgo-search>=3.9.0",
+]
+
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
