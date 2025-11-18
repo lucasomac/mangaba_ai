@@ -76,21 +76,53 @@ git remote -v
 
 ### **2. Configuração do Ambiente Python**
 
+**Opção A: Com UV (Recomendado - Muito mais rápido)**
+
 ```bash
-# Criar ambiente virtual
-python -m venv venv
+# Instalar UV (se ainda não tiver)
+pip install uv
+
+# Sincronizar ambiente (cria .venv e instala todas as dependências)
+# Windows
+.\uv sync
+
+# Linux/Mac
+uv sync
 
 # Ativar ambiente virtual
-# No Linux/Mac:
-source venv/bin/activate
-# No Windows:
-# venv\Scripts\activate
+# Windows
+.\.venv\Scripts\Activate.ps1
 
-# Instalar dependências de desenvolvimento
+# Linux/Mac
+source .venv/bin/activate
+```
+
+**Opção B: Com pip (Tradicional)**
+
+```bash
+# Criar ambiente virtual
+python -m venv .venv
+
+# Ativar ambiente virtual
+# Windows
+.\.venv\Scripts\Activate.ps1
+
+# Linux/Mac
+source .venv/bin/activate
+
+# Instalar dependências
 pip install -r requirements.txt
 pip install -r requirements-test.txt
+```
 
-# Configurar pre-commit hooks (opcional mas recomendado)
+**Configurar pre-commit hooks (opcional mas recomendado):**
+
+```bash
+# Com UV
+uv pip install pre-commit
+pre-commit install
+
+# Com pip
 pip install pre-commit
 pre-commit install
 ```

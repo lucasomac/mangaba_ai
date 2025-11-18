@@ -21,59 +21,129 @@ Repositório minimalista para criação de agentes de IA inteligentes e versáte
 
 ## 🚀 Instalação Rápida
 
-### ⚡ Opção 1: Com UV (Recomendado - Ultra Rápido!)
+Escolha entre **UV** (ultra-rápido) ou **pip** (tradicional):
+
+### ⚡ Opção A: Com UV (10-100x mais rápido!)
 
 ```bash
-# Instalação completa em um comando
+# Windows
 .\uv sync
-
-# Executar exemplo
 .\uv run python examples/basic_example.py
+
+# Linux/Mac
+uv sync
+uv run python examples/basic_example.py
 ```
 
-> 🎯 **UV é 10-100x mais rápido que pip!** [Saiba mais](COMO_USAR_UV.md)
-> 
-> **Dica Windows:** Use `.\uv` ou configure conforme [guia de UV](COMO_USAR_UV.md#-fluxo-de-trabalho-typical)
+> 💡 **Novo em UV?** [Guia completo de comandos UV](COMANDOS_UV.md) • [Como usar UV](COMO_USAR_UV.md)
 
-### Opção 2: Configuração Automática (com pip)
+### 🐍 Opção B: Com pip (tradicional)
 
 ```bash
-# Configuração completa em um comando
-python scripts/uv_setup.py
-```
-
-### Opção 3: Configuração Manual
-
-```bash
-# 1. Criar ambiente virtual
+# 1. Criar e ativar ambiente virtual
 python -m venv .venv
 
-# 2. Ativar (Windows: .\.venv\Scripts\Activate.ps1 | Linux/Mac: source .venv/bin/activate)
+# Windows
 .\.venv\Scripts\Activate.ps1
 
-# 3. Instalar dependências
+# Linux/Mac
+source .venv/bin/activate
+
+# 2. Instalar dependências
 pip install -r requirements.txt
 
-# 4. Configurar ambiente
-copy config_template.json .env
-
-# 5. Validar instalação
-python scripts/validate_env.py
+# 3. Executar exemplo
+python examples/basic_example.py
 ```
+
+### 🤖 Opção C: Setup Automático
+
+```bash
+# Detecta automaticamente UV ou pip
+python scripts/quick_setup.py
+```
+
+<details>
+<summary>📋 <strong>Configuração do arquivo .env</strong></summary>
+
+```bash
+# Copiar template (ou criar manualmente)
+cp .env.example .env  # Linux/Mac
+copy .env.example .env  # Windows
+```
+
+Edite `.env` e adicione sua chave:
+```env
+GOOGLE_API_KEY=sua_chave_aqui
+MODEL_NAME=gemini-2.5-flash
+LOG_LEVEL=INFO
+```
+
+Obtenha sua chave em: https://makersuite.google.com/app/apikey
+
+</details>
+
+## 📦 UV vs pip - Qual usar?
+
+| Característica | UV ⚡ | pip 🐍 |
+|----------------|------|--------|
+| **Velocidade** | 10-100x mais rápido | Padrão Python |
+| **Instalação** | `pip install uv` | Já vem com Python |
+| **Compatibilidade** | 100% compatível | Nativo |
+| **Lock file** | ✅ `uv.lock` | ❌ Manual |
+| **Uso** | `.\uv sync` | `pip install -r requirements.txt` |
+| **Recomendado para** | Desenvolvimento ativo | CI/CD tradicional |
+
+**💡 Dica:** Pode usar ambos! UV é retrocompatível com pip.
 
 ## ⚙️ Configuração
 
-### 🔧 Configuração Automática
+### 🔧 Comandos por Gerenciador
 
-O script `quick_setup.py` automatiza todo o processo:
-- ✅ Cria ambiente virtual
-- ✅ Instala dependências
-- ✅ Configura arquivo .env
-- ✅ Valida instalação
+#### Com UV:
+```bash
+# Sincronizar dependências
+.\uv sync                    # Windows
+uv sync                      # Linux/Mac
 
-### 🛠️ Configuração Manual
+# Instalar pacote novo
+.\uv pip install nome-pacote
 
-1. **Configure o arquivo .env** (copie de `.env.template`):
+# Executar script
+.\uv run python seu_script.py
+
+# Ver pacotes instalados
+.\uv pip list
+```
+
+#### Com pip:
+```bash
+# Ativar ambiente virtual primeiro
+.\.venv\Scripts\Activate.ps1  # Windows
+source .venv/bin/activate    # Linux/Mac
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Instalar pacote novo
+pip install nome-pacote
+
+# Executar script
+python seu_script.py
+
+# Ver pacotes instalados
+pip list
+```
+
+### 🛠️ Configuração Manual do .env
+
+1. **Copie o arquivo de exemplo:**
+```bash
+cp .env.example .env      # Linux/Mac
+copy .env.example .env    # Windows
+```
+
+2. **Edite o arquivo .env:**
 ```env
 # Obrigatório
 GOOGLE_API_KEY=sua_chave_google_api_aqui
@@ -84,7 +154,7 @@ AGENT_NAME=MangabaAgent
 LOG_LEVEL=INFO
 ```
 
-2. **Obtenha sua Google API Key**:
+3. **Obtenha sua Google API Key:**
    - Acesse: https://makersuite.google.com/app/apikey
    - Crie uma nova chave
    - Cole no arquivo .env
@@ -92,11 +162,14 @@ LOG_LEVEL=INFO
 ### 🔍 Validação do Ambiente
 
 ```bash
-# Verifica se tudo está configurado corretamente
-python validate_env.py
+# Validação rápida
+python check_setup.py
 
-# Salva relatório detalhado
-python validate_env.py --save-report
+# Validação completa
+python scripts/validate_env.py
+
+# Com relatório detalhado
+python scripts/validate_env.py --save-report
 ```
 
 ## 📖 Uso Super Simples
@@ -389,21 +462,27 @@ mangaba_ai/
 
 ## 🧪 Testar Rapidamente
 
+### Com UV:
 ```bash
-# 1. Configuração rápida
-python scripts/quick_setup.py
+.\uv run python check_setup.py              # Validação rápida
+.\uv run python examples/basic_example.py   # Exemplo básico
+.\uv run python -m pytest tests/            # Executar testes
+```
 
-# 2. Validar ambiente
-python scripts/validate_env.py
+### Com pip (após ativar .venv):
+```bash
+python check_setup.py                       # Validação rápida
+python examples/basic_example.py            # Exemplo básico
+python scripts/quick_setup.py               # Setup automático
+python -m pytest tests/                     # Executar testes
+```
 
-# 3. Testar exemplo
-python scripts/example_env_usage.py
-
-# 4. Exemplos do curso básico
-python scripts/exemplo_curso_basico.py
-
-# 5. Exemplo interativo
-python examples/basic_example.py
+### Scripts Úteis:
+```bash
+python scripts/validate_env.py              # Validação completa
+python scripts/example_env_usage.py         # Exemplo de uso
+python scripts/exemplo_curso_basico.py      # Exemplos do curso
+python test_correcoes.py                    # Testar correções
 ```
 
 ## 📚 Wiki Avançada e Documentação

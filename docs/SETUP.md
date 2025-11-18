@@ -4,10 +4,20 @@ Este guia explica como configurar o ambiente de desenvolvimento para o projeto M
 
 ## 📋 Pré-requisitos
 
-- Python 3.8 ou superior
-- pip (gerenciador de pacotes Python)
+- Python 3.9 ou superior
+- **UV** (recomendado, 10-100x mais rápido) **OU** pip (tradicional)
 - Conta no Google AI Studio para obter API key
 - Git (opcional, para controle de versão)
+
+### Escolha seu Gerenciador de Pacotes
+
+**Opção A: UV (Recomendado - Ultra-rápido)**
+```bash
+pip install uv
+```
+
+**Opção B: pip (Tradicional)**
+- Já vem instalado com Python
 
 ## 🚀 Configuração Rápida
 
@@ -18,36 +28,45 @@ git clone <repository-url>
 cd mangaba_ai
 ```
 
-### 2. Crie um Ambiente Virtual
+### 2. Configure o Ambiente
 
+**Com UV:**
 ```bash
 # Windows
-python -m venv venv
-venv\Scripts\activate
+.\uv sync
+.\.venv\Scripts\Activate.ps1
 
 # Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
+uv sync
+source .venv/bin/activate
 ```
 
-### 3. Instale as Dependências
-
+**Com pip:**
 ```bash
-# Dependências principais
-pip install -r requirements.txt
+# Criar ambiente virtual
+python -m venv .venv
 
-# Dependências de desenvolvimento (opcional)
-pip install -r requirements-test.txt
+# Windows
+.\.venv\Scripts\Activate.ps1
+
+# Linux/Mac
+source .venv/bin/activate
+
+# Instalar dependências
+pip install -r requirements.txt
 ```
 
-### 4. Configure as Variáveis de Ambiente
+### 3. Configure as Variáveis de Ambiente
 
 ```bash
 # Copie o template
-cp .env.template .env
+# Linux/Mac
+cp .env.example .env
 
-# Edite o arquivo .env com seus valores
-# No Windows, use: copy .env.template .env
+# Windows
+copy .env.example .env
+
+# Edite o arquivo .env com sua chave API do Google
 ```
 
 ### 5. Obtenha sua API Key do Google

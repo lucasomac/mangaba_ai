@@ -6,12 +6,13 @@ Esta seção contém as **perguntas mais frequentes** sobre o projeto Mangaba AI
 
 1. [🚀 Primeiros Passos](#-primeiros-passos)
 2. [⚙️ Configuração e Instalação](#️-configuração-e-instalação)
-3. [🤖 Uso do Agente](#-uso-do-agente)
-4. [🌐 Protocolos A2A e MCP](#-protocolos-a2a-e-mcp)
-5. [🐛 Problemas Comuns](#-problemas-comuns)
-6. [🔧 Desenvolvimento e Contribuição](#-desenvolvimento-e-contribuição)
-7. [💰 Custos e Limites](#-custos-e-limites)
-8. [🔐 Segurança e Privacidade](#-segurança-e-privacidade)
+3. [📦 UV vs pip - Qual usar?](#-uv-vs-pip---qual-usar)
+4. [🤖 Uso do Agente](#-uso-do-agente)
+5. [🌐 Protocolos A2A e MCP](#-protocolos-a2a-e-mcp)
+6. [🐛 Problemas Comuns](#-problemas-comuns)
+7. [🔧 Desenvolvimento e Contribuição](#-desenvolvimento-e-contribuição)
+8. [💰 Custos e Limites](#-custos-e-limites)
+9. [🔐 Segurança e Privacidade](#-segurança-e-privacidade)
 
 ---
 
@@ -81,7 +82,12 @@ O Mangaba AI é ideal para:
 **Soluções comuns:**
 
 **1. Problema com dependências:**
+
 ```bash
+# Com UV (mais rápido):
+uv sync --reinstall
+
+# Com pip (tradicional):
 # Atualizar pip
 python -m pip install --upgrade pip
 
@@ -91,21 +97,26 @@ pip install -r requirements.txt -v
 
 **2. Python muito antigo:**
 ```bash
-# Verificar versão
+# Verificar versão (precisa ser 3.9+)
 python --version
 
-# Se menor que 3.8, instalar versão mais nova
+# Se menor que 3.9, instalar versão mais nova
 ```
 
 **3. Problemas de permissão:**
 ```bash
-# Linux/Mac
-sudo pip install -r requirements.txt
+# Use ambiente virtual (UV ou pip):
 
-# Ou usar ambiente virtual
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
+# Opção A: UV
+uv venv
+source .venv/bin/activate  # Linux/Mac
+.\.venv\Scripts\Activate.ps1  # Windows
+uv sync
+
+# Opção B: pip
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+.\.venv\Scripts\Activate.ps1  # Windows
 pip install -r requirements.txt
 ```
 
@@ -122,6 +133,97 @@ python examples/basic_example.py
 ```
 
 **Se ambos funcionarem, está tudo certo! ✅**
+
+---
+
+## 📦 UV vs pip - Qual usar?
+
+### **❓ Qual a diferença entre UV e pip?**
+
+**UV** é um gerenciador de pacotes Python moderno, escrito em Rust, que é **10-100x mais rápido** que o pip tradicional. Veja a comparação:
+
+| Característica | UV | pip |
+|---|---|---|
+| **Velocidade** | ⚡ 10-100x mais rápido | 🐢 Tradicional |
+| **Resolução de dependências** | 🎯 Muito mais rápida | ⏳ Pode ser lenta |
+| **Lock file** | ✅ uv.lock (determinístico) | ❌ Não nativo |
+| **Cache inteligente** | ✅ Global e eficiente | 🔄 Básico |
+| **Compatibilidade** | ✅ 100% compatível com pip | ✅ Padrão Python |
+| **Maturidade** | 🆕 Novo (2024+) | 🏛️ Estabelecido |
+
+### **❓ Devo usar UV ou pip?**
+
+**Use UV se:**
+- ⚡ Você quer velocidade máxima
+- 🔄 Trabalha com CI/CD
+- 📦 Gerencia muitos projetos
+- 🆕 Está confortável com ferramentas modernas
+
+**Use pip se:**
+- 🏢 Seu ambiente corporativo exige pip
+- 🛠️ Você prefere ferramentas estabelecidas
+- 📚 Quer máxima compatibilidade histórica
+- 🎯 Simplicidade é prioridade
+
+**Ambos funcionam perfeitamente com Mangaba AI!** 🎉
+
+### **❓ Como migrar de pip para UV?**
+
+```bash
+# 1. Instalar UV
+pip install uv
+
+# 2. Criar .venv com UV
+uv venv
+
+# 3. Ativar ambiente
+# Windows
+.\.venv\Scripts\Activate.ps1
+# Linux/Mac
+source .venv/bin/activate
+
+# 4. Sincronizar dependências
+uv sync
+
+# Pronto! Tudo instalado 10-100x mais rápido 🚀
+```
+
+### **❓ Como voltar de UV para pip?**
+
+```bash
+# 1. Desativar ambiente atual
+deactivate
+
+# 2. Remover .venv
+rm -rf .venv  # Linux/Mac
+Remove-Item -Recurse -Force .venv  # Windows
+
+# 3. Criar novo .venv com venv padrão
+python -m venv .venv
+
+# 4. Ativar
+source .venv/bin/activate  # Linux/Mac
+.\.venv\Scripts\Activate.ps1  # Windows
+
+# 5. Instalar com pip
+pip install -r requirements.txt
+```
+
+### **❓ Posso ter projetos com UV e pip ao mesmo tempo?**
+
+**Sim!** Cada projeto pode usar o gerenciador que preferir:
+
+```bash
+# Projeto A com UV
+cd projeto-a
+uv sync
+
+# Projeto B com pip
+cd ../projeto-b
+pip install -r requirements.txt
+```
+
+Mangaba AI suporta ambos igualmente! 🎯
 
 ---
 
