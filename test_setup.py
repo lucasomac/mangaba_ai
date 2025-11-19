@@ -8,6 +8,41 @@ import os
 import sys
 from pathlib import Path
 
+PROVIDER_ALIAS = {
+    'gemini': 'google',
+    'google-ai': 'google',
+    'googleai': 'google',
+    'gpt': 'openai',
+    'chatgpt': 'openai',
+    'claude': 'anthropic',
+    'hf': 'huggingface',
+    'hugging-face': 'huggingface'
+}
+
+PROVIDER_KEYS = {
+    'google': ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+    'openai': ['OPENAI_API_KEY'],
+    'anthropic': ['ANTHROPIC_API_KEY'],
+    'huggingface': ['HUGGINGFACE_API_KEY', 'HUGGINGFACE_TOKEN', 'HF_TOKEN', 'HUGGINGFACEHUB_API_TOKEN']
+}
+
+
+def resolve_provider() -> str:
+    provider = (os.getenv("LLM_PROVIDER") or "google").lower()
+    return PROVIDER_ALIAS.get(provider, provider)
+
+
+def resolve_provider_key():
+    provider = resolve_provider()
+    for candidate in PROVIDER_KEYS.get(provider, []):
+        value = os.getenv(candidate)
+        if value:
+            return provider, candidate, value
+    fallback = os.getenv("API_KEY")
+    if fallback:
+        return provider, "API_KEY", fallback
+    return provider, None, None
+
 def print_header(text):
     print("\n" + "="*70)
     print(f"  {text}")
@@ -100,11 +135,12 @@ def main():
         from dotenv import load_dotenv
         load_dotenv(env_file)
         
-        api_key = os.getenv("GOOGLE_API_KEY")
+        provider, key_name, api_key = resolve_provider_key()
         if api_key and api_key.strip():
-            print_success("GOOGLE_API_KEY configurada")
+            print_success(f"{key_name} configurada (provedor: {provider})")
         else:
-            print_warning("GOOGLE_API_KEY vazia - Configure antes de usar!")
+            expected = PROVIDER_KEYS.get(provider, ["API_KEY"])[0]
+            print_warning(f"{expected} vazia - Configure antes de usar!")
         
         # Verificar outras variáveis
         model = os.getenv("MODEL_NAME", "não definido")
@@ -126,9 +162,10 @@ def main():
         # Tentar criar uma instância (sem conectar à API)
         print_info("Testando criação de instância...")
         
-        api_key = os.getenv("GOOGLE_API_KEY")
+        provider, key_name, api_key = resolve_provider_key()
         if not api_key or not api_key.strip():
-            print_warning("GOOGLE_API_KEY não configurada - usando chave de teste (não conectará)")
+            missing = key_name or PROVIDER_KEYS.get(provider, ["API_KEY"])[0]
+            print_warning(f"{missing} não configurada - usando chave de teste (não conectará)")
             test_key = "test-key-not-real"
         else:
             test_key = api_key
@@ -139,7 +176,7 @@ def main():
             print_success(f"Modelo: {agent.model_name}")
         except Exception as e:
             # É esperado falhar sem uma chave real
-            if "GOOGLE_API_KEY" in str(e) or "api_key" in str(e).lower():
+            if (key_name and key_name.lower() in str(e).lower()) or "api_key" in str(e).lower():
                 print_warning(f"Erro esperado (chave não configurada): {str(e)[:60]}...")
             else:
                 print_error(f"Erro ao criar agente: {e}")
@@ -154,7 +191,7 @@ def main():
     
     if all_ok:
         print_success("✅ SETUP OK - Ambiente pronto!")
-        print_info("Próximo passo: Adicione sua GOOGLE_API_KEY ao arquivo .env")
+        print_info("Próximo passo: Adicione a chave do provedor escolhido ao arquivo .env")
         print_info("Depois: python examples/basic_example.py")
         return 0
     else:

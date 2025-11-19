@@ -23,18 +23,16 @@ class TestMangabaAgentIntegration:
     """Testes de integração para MangabaAgent com protocolos A2A e MCP"""
     
     @pytest.fixture
-    def mock_genai(self):
-        """Mock para Google Generative AI"""
-        with patch('mangaba_agent.genai') as mock:
-            mock_model = Mock()
-            mock_response = Mock()
-            mock_response.text = "Resposta simulada do modelo"
-            mock_model.generate_content.return_value = mock_response
-            mock.GenerativeModel.return_value = mock_model
-            yield mock
+    def mock_llm(self):
+        """Mock para cliente LLM"""
+        with patch('mangaba_agent.create_llm_client') as mock_factory:
+            mock_client = Mock()
+            mock_client.generate_text.return_value = "Resposta simulada do modelo"
+            mock_factory.return_value = mock_client
+            yield mock_factory, mock_client
     
     @pytest.fixture
-    def agent(self, mock_genai):
+    def agent(self, mock_llm):
         """Fixture para criar um agente Mangaba"""
         return MangabaAgent(
             api_key="test_key",
@@ -165,7 +163,7 @@ class TestMangabaAgentIntegration:
     def test_error_handling_integration(self, agent):
         """Testa tratamento de erros com protocolos"""
         # Simula erro no modelo
-        with patch.object(agent.model, 'generate_content', side_effect=Exception("API Error")):
+        with patch.object(agent.llm, 'generate_text', side_effect=Exception("API Error")):
             response = agent.chat("Teste de erro")
             
             assert "erro" in response.lower() or "error" in response.lower()
@@ -353,17 +351,15 @@ class TestPerformanceIntegration:
     """Testes de performance e escalabilidade"""
     
     @pytest.fixture
-    def mock_genai(self):
-        """Mock para Google Generative AI"""
-        with patch('mangaba_agent.genai') as mock:
-            mock_model = Mock()
-            mock_response = Mock()
-            mock_response.text = "Resposta rápida"
-            mock_model.generate_content.return_value = mock_response
-            mock.GenerativeModel.return_value = mock_model
-            yield mock
+    def mock_llm(self):
+        """Mock para cliente LLM"""
+        with patch('mangaba_agent.create_llm_client') as mock_factory:
+            mock_client = Mock()
+            mock_client.generate_text.return_value = "Resposta rápida"
+            mock_factory.return_value = mock_client
+            yield mock_factory, mock_client
     
-    def test_multiple_agents_communication(self, mock_genai):
+    def test_multiple_agents_communication(self, mock_llm):
         """Testa comunicação entre múltiplos agentes"""
         agents = []
         
@@ -396,7 +392,7 @@ class TestPerformanceIntegration:
             broadcast_contexts = agent.mcp_protocol.find_contexts_by_tag("broadcast")
             assert len(broadcast_contexts) > 0
     
-    def test_large_context_handling(self, mock_genai):
+    def test_large_context_handling(self, mock_llm):
         """Testa manipulação de grandes volumes de contexto"""
         agent = MangabaAgent(
             api_key="test_key",
@@ -421,7 +417,7 @@ class TestPerformanceIntegration:
         relevant_contexts = agent.mcp_protocol.get_relevant_contexts("Mensagem 50")
         assert len(relevant_contexts) > 0
     
-    def test_concurrent_operations(self, mock_genai):
+    def test_concurrent_operations(self, mock_llm):
         """Testa operações concorrentes (simuladas)"""
         agent = MangabaAgent(
             api_key="test_key",

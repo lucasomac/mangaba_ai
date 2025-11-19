@@ -15,7 +15,8 @@ DATA: 16/11/2025 11:06:40
 O arquivo .env foi criado com as seguintes configurações:
 
 🔐 OBRIGATÓRIO:
-  • GOOGLE_API_KEY=  (VAZIO - Adicione sua chave!)
+  • LLM_PROVIDER=google  (altere para openai/anthropic/huggingface se preferir)
+  • GOOGLE_API_KEY=  (ou chave equivalente do provedor selecionado)
 
 ⚙️ OPCIONAL (com padrões):
   • MODEL_NAME=gemini-2.5-flash
@@ -33,8 +34,8 @@ O arquivo .env foi criado com as seguintes configurações:
     Passo 1: Obtenha sua chave em:
     → https://makersuite.google.com/app/apikey
     
-    Passo 2: Edite o arquivo .env e adicione:
-    GOOGLE_API_KEY=AIza...sua_chave_aqui...
+    Passo 2: Edite o arquivo .env e adicione a variável do provedor escolhido:
+    EX: GOOGLE_API_KEY=AIza...sua_chave_aqui...
     
     Passo 3: Valide a configuração:
     $ uv run python scripts/validate_env.py
@@ -61,7 +62,11 @@ O arquivo .env foi criado com as seguintes configurações:
 # Arquivo criado em: c:\Users\dheiver.santos_a3dat\mangaba_ai\.env
 
 # OBRIGATÓRIO:
-GOOGLE_API_KEY=                          ← ADICIONE SUA CHAVE AQUI!
+LLM_PROVIDER=google
+GOOGLE_API_KEY=                          ← ADICIONE SUA CHAVE (ou use OPENAI_/ANTHROPIC_/HUGGINGFACE_)
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+HUGGINGFACE_API_KEY=
 
 # OPCIONAIS (com valores padrão):
 MODEL_NAME=gemini-2.5-flash
@@ -75,22 +80,22 @@ ENVIRONMENT=development
 ================================================================================
 
 PASSO 1: OBTER A CHAVE
-  1. Acesse: https://makersuite.google.com/app/apikey
-  2. Clique em "Create API Key"
-  3. Crie uma nova chave (Google AI Studio)
-  4. Copie a chave (formato: AIza...)
+  • Google Gemini: https://makersuite.google.com/app/apikey
+  • OpenAI: https://platform.openai.com/api-keys
+  • Anthropic: https://console.anthropic.com/account/keys
+  • Hugging Face: https://huggingface.co/settings/tokens
 
 PASSO 2: ADICIONAR AO .env
   1. Abra o arquivo: .env
-  2. Encontre: GOOGLE_API_KEY=
-  3. Adicione: GOOGLE_API_KEY=AIza...sua_chave...
+  2. Encontre a variável correspondente (GOOGLE_/OPENAI_/ANTHROPIC_/HUGGINGFACE_)
+  3. Adicione: VARIAVEL=suachaveaqui
   4. Salve o arquivo
 
 PASSO 3: VALIDAR
   $ uv run python scripts/validate_env.py
 
   Saída esperada:
-  ✅ GOOGLE_API_KEY encontrada
+  ✅ Chave do provedor selecionado encontrada
   ✅ Configuração válida
   ✅ Ambiente pronto para uso
 
@@ -127,7 +132,7 @@ Criação de Arquivo:
   ☑ Arquivo contém configurações padrão
 
 Configuração:
-  ☐ GOOGLE_API_KEY adicionada (próximo passo!)
+  ☐ Variável do provedor adicionada (ex: GOOGLE_API_KEY)
   ☐ Outros parâmetros ajustados (opcional)
 
 Validação:
@@ -142,7 +147,7 @@ Testes:
                         🎯 PRÓXIMO COMANDO
 ================================================================================
 
-Para continuar, adicione sua chave de API ao arquivo .env:
+Para continuar, adicione sua chave de API ao arquivo .env (GOOGLE_/OPENAI_/ANTHROPIC_/HUGGINGFACE_):
 
 Windows (PowerShell):
   notepad .env

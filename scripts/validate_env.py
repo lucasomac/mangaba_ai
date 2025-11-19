@@ -175,14 +175,83 @@ class EnvironmentValidator:
                     str(e)
                 )
         
-        # Variáveis obrigatórias
-        required_vars = {
-            'GOOGLE_API_KEY': 'Chave da API do Google Generative AI'
+        alias_map = {
+            'gemini': 'google',
+            'google-ai': 'google',
+            'googleai': 'google',
+            'gpt': 'openai',
+            'chatgpt': 'openai',
+            'claude': 'anthropic',
+            'hf': 'huggingface',
+            'hugging-face': 'huggingface'
         }
+        raw_provider = (os.getenv('LLM_PROVIDER') or 'google').lower()
+        provider = alias_map.get(raw_provider, raw_provider)
+        
+        provider_keys = {
+            'google': ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+            'openai': ['OPENAI_API_KEY'],
+            'anthropic': ['ANTHROPIC_API_KEY'],
+            'huggingface': ['HUGGINGFACE_API_KEY', 'HUGGINGFACE_TOKEN', 'HF_TOKEN', 'HUGGINGFACEHUB_API_TOKEN']
+        }
+        
+        all_ok = True
+        
+        # Validar LLM_PROVIDER
+        if provider not in provider_keys:
+            self.log_result(
+                "Required Variable: LLM_PROVIDER",
+                "WARNING",
+                f"Provedor '{provider}' não reconhecido",
+                "Será necessário configurar manualmente via API_KEY"
+            )
+        else:
+            self.log_result(
+                "Required Variable: LLM_PROVIDER",
+                "OK",
+                f"Selecionado: {provider}",
+                "Define qual provedor LLM será utilizado"
+            )
+        
+        # Validar API key correspondente
+        key_candidates = provider_keys.get(provider, [])
+        key_candidates.append('API_KEY')  # fallback genérico
+        
+        key_name = None
+        key_value = None
+        for candidate in key_candidates:
+            candidate_value = os.getenv(candidate)
+            if candidate_value:
+                key_name = candidate
+                key_value = candidate_value
+                break
+        
+        if not key_value:
+            description = (
+                f"Chave da API para o provedor '{provider}'. "
+                f"Configure {key_candidates[0]} ou API_KEY."
+            )
+            self.log_result(
+                "Required Variable: API Key",
+                "ERROR",
+                "Variável não configurada",
+                description
+            )
+            all_ok = False
+        else:
+            display_value = key_value[:8] + '...' if 'key' in (key_name or '').lower() else key_value
+            self.log_result(
+                f"Required Variable: {key_name}",
+                "OK",
+                f"Configurada: {display_value}",
+                f"Usada para autenticar no provedor {provider}"
+            )
         
         # Variáveis opcionais com valores padrão
         optional_vars = {
             'MODEL_NAME': 'gemini-2.5-flash',
+            'MODEL_TEMPERATURE': '0.7',
+            'MAX_OUTPUT_TOKENS': '1024',
             'AGENT_NAME': 'MangabaAgent',
             'USE_MCP': 'true',
             'USE_A2A': 'true',
@@ -190,30 +259,6 @@ class EnvironmentValidator:
             'ENVIRONMENT': 'development'
         }
         
-        all_ok = True
-        
-        # Verifica variáveis obrigatórias
-        for var, description in required_vars.items():
-            value = os.getenv(var)
-            if not value or value == f'your_{var.lower()}_here':
-                self.log_result(
-                    f"Required Variable: {var}",
-                    "ERROR",
-                    "Variável não configurada",
-                    description
-                )
-                all_ok = False
-            else:
-                # Mascarar API keys para segurança
-                display_value = value[:8] + '...' if 'key' in var.lower() else value
-                self.log_result(
-                    f"Required Variable: {var}",
-                    "OK",
-                    f"Configurada: {display_value}",
-                    description
-                )
-        
-        # Verifica variáveis opcionais
         for var, default in optional_vars.items():
             value = os.getenv(var, default)
             self.log_result(
@@ -229,6 +274,9 @@ class EnvironmentValidator:
         """Verifica dependências instaladas"""
         required_packages = [
             'google-generativeai',
+            'openai',
+            'anthropic',
+            'huggingface-hub',
             'python-dotenv',
             'loguru'
         ]
@@ -276,6 +324,9 @@ class EnvironmentValidator:
             ('protocols.a2a', 'A2AProtocol'),
             ('protocols.mcp', 'MCPProtocol'),
             ('google.generativeai', None),
+            ('openai', None),
+            ('anthropic', None),
+            ('huggingface_hub', None),
             ('dotenv', None),
             ('loguru', None)
         ]
@@ -322,31 +373,80 @@ class EnvironmentValidator:
     
     def check_api_connectivity(self) -> bool:
         """Verifica conectividade com API (teste básico)"""
-        api_key = os.getenv('GOOGLE_API_KEY')
+        alias_map = {
+            'gemini': 'google',
+            'google-ai': 'google',
+            'googleai': 'google',
+            'gpt': 'openai',
+            'chatgpt': 'openai',
+            'claude': 'anthropic',
+            'hf': 'huggingface',
+            'hugging-face': 'huggingface'
+        }
+        raw_provider = (os.getenv('LLM_PROVIDER') or 'google').lower()
+        provider = alias_map.get(raw_provider, raw_provider)
+        provider_keys = {
+            'google': ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+            'openai': ['OPENAI_API_KEY'],
+            'anthropic': ['ANTHROPIC_API_KEY'],
+            'huggingface': ['HUGGINGFACE_API_KEY', 'HUGGINGFACE_TOKEN', 'HF_TOKEN', 'HUGGINGFACEHUB_API_TOKEN']
+        }
+        key_candidates = provider_keys.get(provider, [])
+        key_candidates.append('API_KEY')
+        api_key = None
+        for candidate in key_candidates:
+            candidate_value = os.getenv(candidate)
+            if candidate_value:
+                api_key = candidate_value
+                break
         
-        if not api_key or api_key == 'your_google_api_key_here':
+        if not api_key:
             self.log_result(
                 "API Connectivity",
                 "SKIP",
                 "API key não configurada",
-                "Configure GOOGLE_API_KEY para testar conectividade"
+                f"Configure a variável correspondente ao provedor '{provider}'"
             )
             return True
         
         try:
-            # Teste básico de import e configuração
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
+            if provider == 'google':
+                import google.generativeai as genai
+                genai.configure(api_key=api_key)
+            elif provider == 'openai':
+                from openai import OpenAI
+                OpenAI(api_key=api_key)
+            elif provider == 'anthropic':
+                from anthropic import Anthropic
+                Anthropic(api_key=api_key)
+            elif provider == 'huggingface':
+                from huggingface_hub import InferenceClient
+                InferenceClient(token=api_key)
+            else:
+                self.log_result(
+                    "API Connectivity",
+                    "SKIP",
+                    f"Provedor '{provider}' personalizado",
+                    "Configure manualmente se necessário"
+                )
+                return True
             
-            # Não fazemos chamada real para evitar custos
             self.log_result(
                 "API Connectivity",
                 "OK",
-                "API configurada com sucesso",
+                f"Cliente do provedor '{provider}' configurado",
                 "Teste de conectividade básico passou"
             )
             return True
             
+        except ImportError as e:
+            self.log_result(
+                "API Connectivity",
+                "ERROR",
+                "Dependência não instalada",
+                str(e)
+            )
+            return False
         except Exception as e:
             self.log_result(
                 "API Connectivity",

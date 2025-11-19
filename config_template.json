@@ -1,22 +1,47 @@
 {
-  "description": "Template de configuração para Mangaba AI",
+  "description": "Template de configuração para Mangaba AI (multi-LLM)",
   "required": {
-    "GOOGLE_API_KEY": {
-      "description": "Chave da API do Google Generative AI",
+    "LLM_PROVIDER": {
+      "description": "Provedor LLM padrão (google, openai, anthropic, huggingface)",
       "type": "string",
-      "example": "AIza...",
-      "required": true
+      "default": "google",
+      "options": [
+        "google",
+        "gemini",
+        "openai",
+        "gpt",
+        "anthropic",
+        "claude",
+        "huggingface",
+        "hf"
+      ]
     }
   },
   "optional": {
+    "GOOGLE_API_KEY": {
+      "description": "Obrigatório quando LLM_PROVIDER=google/gemini",
+      "type": "string",
+      "example": "AIza..."
+    },
+    "OPENAI_API_KEY": {
+      "description": "Obrigatório quando LLM_PROVIDER=openai/gpt",
+      "type": "string",
+      "example": "sk-..."
+    },
+    "ANTHROPIC_API_KEY": {
+      "description": "Obrigatório quando LLM_PROVIDER=anthropic/claude",
+      "type": "string",
+      "example": "anthropic-key-..."
+    },
+    "HUGGINGFACE_API_KEY": {
+      "description": "Obrigatório quando LLM_PROVIDER=huggingface/hf",
+      "type": "string",
+      "example": "hf_..."
+    },
     "MODEL_NAME": {
       "description": "Nome do modelo a ser usado",
       "type": "string",
-      "default": "gemini-2.5-flash",
-      "options": [
-        "gemini-2.5-flash",
-        "gemini-pro-vision"
-      ]
+      "default": "gemini-2.5-flash"
     },
     "MODEL_TEMPERATURE": {
       "description": "Temperatura do modelo (criatividade)",
@@ -27,8 +52,13 @@
         2.0
       ]
     },
+    "MAX_OUTPUT_TOKENS": {
+      "description": "Limite padrão de tokens gerados",
+      "type": "integer",
+      "default": 1024
+    },
     "AGENT_NAME": {
-      "description": "Nome do agente",
+      "description": "Nome do agente (alias para agent_id)",
       "type": "string",
       "default": "MangabaAgent"
     },

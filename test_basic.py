@@ -7,6 +7,35 @@ from dotenv import load_dotenv
 # Carrega variáveis de ambiente
 load_dotenv()
 
+PROVIDER_ALIAS = {
+    'gemini': 'google',
+    'google-ai': 'google',
+    'googleai': 'google',
+    'gpt': 'openai',
+    'chatgpt': 'openai',
+    'claude': 'anthropic',
+    'hf': 'huggingface',
+    'hugging-face': 'huggingface'
+}
+
+
+def has_configured_api_key() -> bool:
+    """Retorna True se houver alguma chave configurada para o provedor atual."""
+    provider = (os.getenv('LLM_PROVIDER') or 'google').lower()
+    provider = PROVIDER_ALIAS.get(provider, provider)
+    provider_keys = {
+        'google': ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+        'openai': ['OPENAI_API_KEY'],
+        'anthropic': ['ANTHROPIC_API_KEY'],
+        'huggingface': ['HUGGINGFACE_API_KEY', 'HUGGINGFACE_TOKEN', 'HF_TOKEN', 'HUGGINGFACEHUB_API_TOKEN']
+    }
+    for candidate in provider_keys.get(provider, []):
+        value = os.getenv(candidate)
+        if value and value != "cole_sua_chave_aqui":
+            return True
+    fallback = os.getenv('API_KEY')
+    return bool(fallback and fallback != "cole_sua_chave_aqui")
+
 def test_imports():
     """Testa se todos os imports estão funcionando."""
     try:
@@ -42,7 +71,7 @@ def test_agent_creation():
         from mangaba_ai import MangabaAgent
         
         # Verifica se a API key está configurada
-        if not os.getenv('API_KEY') or os.getenv('API_KEY') == "cole_sua_chave_aqui":
+        if not has_configured_api_key():
             print("⚠️  Pulando teste do agente - API key não configurada")
             return True
         
@@ -58,7 +87,7 @@ def test_basic_chat():
     try:
         from mangaba_ai import MangabaAgent
         
-        if not os.getenv('API_KEY') or os.getenv('API_KEY') == "cole_sua_chave_aqui":
+        if not has_configured_api_key():
             print("⚠️  Pulando teste de chat - API key não configurada")
             return True
         
@@ -80,7 +109,7 @@ def test_analyze_text():
     try:
         from mangaba_ai import MangabaAgent
         
-        if not os.getenv('API_KEY') or os.getenv('API_KEY') == "cole_sua_chave_aqui":
+        if not has_configured_api_key():
             print("⚠️  Pulando teste de análise - API key não configurada")
             return True
         
@@ -103,7 +132,7 @@ def test_translate():
     try:
         from mangaba_ai import MangabaAgent
         
-        if not os.getenv('API_KEY') or os.getenv('API_KEY') == "cole_sua_chave_aqui":
+        if not has_configured_api_key():
             print("⚠️  Pulando teste de tradução - API key não configurada")
             return True
         

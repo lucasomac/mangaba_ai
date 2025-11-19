@@ -32,41 +32,32 @@ def test_config():
 
 
 @pytest.fixture
-def mock_genai():
-    """Mock global para Google Generative AI"""
-    with patch('mangaba_agent.genai') as mock:
-        # Configura modelo mock
-        mock_model = Mock()
-        mock_response = Mock()
-        mock_response.text = "Resposta simulada do modelo AI"
-        mock_model.generate_content.return_value = mock_response
-        mock.GenerativeModel.return_value = mock_model
-        
-        # Configura método configure
-        mock.configure = Mock()
-        
-        yield mock
+def mock_llm_client():
+    """Mock global para o cliente LLM genérico"""
+    with patch('mangaba_agent.create_llm_client') as mock_factory:
+        mock_client = Mock()
+        mock_client.generate_text.return_value = "Resposta simulada do modelo AI"
+        mock_factory.return_value = mock_client
+        yield mock_factory, mock_client
 
 
 @pytest.fixture
-def sample_agent(mock_genai, test_config):
+def sample_agent(mock_llm_client, test_config):
     """Fixture para criar um agente de teste padrão"""
     return MangabaAgent(
         api_key=test_config["api_key"],
-        agent_name="TestAgent",
-        use_mcp=True,
-        use_a2a=True
+        model=test_config["model_name"],
+        enable_mcp=True,
     )
 
 
 @pytest.fixture
-def clean_agent(mock_genai, test_config):
+def clean_agent(mock_llm_client, test_config):
     """Fixture para criar um agente limpo sem protocolos"""
     return MangabaAgent(
         api_key=test_config["api_key"],
-        agent_name="CleanAgent",
-        use_mcp=False,
-        use_a2a=False
+        model=test_config["model_name"],
+        enable_mcp=False,
     )
 
 
@@ -139,7 +130,7 @@ def sample_contexts():
 
 
 @pytest.fixture
-def connected_agents(mock_genai, test_config):
+def connected_agents(mock_llm_client, test_config):
     """Fixture para criar múltiplos agentes conectados"""
     agents = []
     
@@ -147,9 +138,8 @@ def connected_agents(mock_genai, test_config):
     for i in range(3):
         agent = MangabaAgent(
             api_key=test_config["api_key"],
-            agent_name=f"Agent{i+1}",
-            use_mcp=True,
-            use_a2a=True
+            model=test_config["model_name"],
+            enable_mcp=True,
         )
         agents.append(agent)
     

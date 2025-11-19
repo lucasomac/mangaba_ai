@@ -1,4 +1,3 @@
-import google.generativeai as genai
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 from config import config
@@ -6,13 +5,28 @@ from utils.logger import get_logger
 from protocols.a2a import A2AAgent, A2AMessage, MessageType
 from protocols.mcp import MCPProtocol, MCPContext, ContextType, ContextPriority
 import uuid
+from mangaba.core.llm import create_llm_client
 
 class MangabaAgent(A2AAgent):
     """Agente de IA inteligente e versátil com protocolos A2A e MCP"""
     
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, 
-                 agent_id: Optional[str] = None, enable_mcp: bool = True):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        enable_mcp: bool = True,
+        agent_name: Optional[str] = None,
+        use_mcp: Optional[bool] = None,
+        use_a2a: Optional[bool] = None,
+    ):
         """Inicializa o agente com capacidades A2A e MCP."""
+        
+        if agent_name and not agent_id:
+            agent_id = agent_name
+        if use_mcp is not None:
+            enable_mcp = use_mcp
+        self.use_a2a = True if use_a2a is None else use_a2a
         
         # Inicializa A2A
         self.agent_id = agent_id or f"mangaba_{uuid.uuid4().hex[:8]}"
@@ -21,10 +35,17 @@ class MangabaAgent(A2AAgent):
         # Configuração básica
         self.api_key = api_key or config.api_key
         self.model_name = model or config.model
+        self.provider = getattr(config, "provider", "google")
         
-        # Configura o provedor de IA (exemplo com Gemini)
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        # Configura o provedor de IA através do cliente genérico
+        self.llm = create_llm_client(
+            provider=self.provider,
+            api_key=self.api_key,
+            model=self.model_name,
+            temperature=getattr(config, "temperature", 0.7),
+            max_output_tokens=getattr(config, "max_output_tokens", 1024),
+            system_prompt=getattr(config, "system_prompt", None),
+        )
         
         # Protocolo MCP
         self.mcp_enabled = enable_mcp
@@ -47,10 +68,14 @@ class MangabaAgent(A2AAgent):
         if not hasattr(self, 'logger'):
             # Logger
             self.logger = get_logger(f"MangabaAgent[{self.agent_id}]")
-        self.logger.info(f"✅ Agente inicializado - ID: {self.agent_id}, Modelo: {self.model_name}")
+        self.logger.info(
+            f"✅ Agente inicializado - ID: {self.agent_id}, "
+            f"Provider: {self.provider}, Modelo: {self.model_name}"
+        )
         
         # Configurações A2A específicas
-        self.setup_mangaba_handlers()
+        if self.use_a2a:
+            self.setup_mangaba_handlers()
     
     def setup_mangaba_handlers(self):
         """Configura handlers específicos do Mangaba para A2A"""
@@ -132,8 +157,7 @@ class MangabaAgent(A2AAgent):
                 enhanced_message = message
             
             # Gera resposta
-            response = self.model.generate_content(enhanced_message)
-            result = response.text
+            result = self.llm.generate_text(enhanced_message)
             
             # Adiciona resposta ao contexto
             if self.mcp_enabled and use_context:
@@ -160,8 +184,7 @@ class MangabaAgent(A2AAgent):
         """Analisa texto com instrução específica"""
         try:
             prompt = f"{instruction}:\n\n{text}"
-            response = self.model.generate_content(prompt)
-            result = response.text
+            result = self.llm.generate_text(prompt)
             
             # Adiciona ao contexto MCP se habilitado
             if self.mcp_enabled:
@@ -189,8 +212,7 @@ class MangabaAgent(A2AAgent):
         """Traduz texto para idioma específico"""
         try:
             prompt = f"Traduza o seguinte texto para {target_language}:\n\n{text}"
-            response = self.model.generate_content(prompt)
-            result = response.text
+            result = self.llm.generate_text(prompt)
             
             # Adiciona ao contexto MCP se habilitado
             if self.mcp_enabled:

@@ -4,13 +4,13 @@ Agent implementation with role, goal, and backstory support
 
 import uuid
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
-import google.generativeai as genai
 from datetime import datetime
 
 from config import config
 from utils.logger import get_logger
 from protocols.a2a import A2AAgent, A2AMessage, MessageType
 from protocols.mcp import MCPProtocol, MCPContext, ContextType, ContextPriority
+from mangaba.core.llm import create_llm_client
 
 if TYPE_CHECKING:
     from mangaba.tools.base import BaseTool
@@ -86,8 +86,15 @@ class Agent(A2AAgent):
         # Configuração do LLM
         self.api_key = api_key or config.api_key
         self.model_name = llm or config.model
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        self.provider = getattr(config, "provider", "google")
+        self.llm = create_llm_client(
+            provider=self.provider,
+            api_key=self.api_key,
+            model=self.model_name,
+            temperature=getattr(config, "temperature", 0.7),
+            max_output_tokens=getattr(config, "max_output_tokens", 1024),
+            system_prompt=getattr(config, "system_prompt", None),
+        )
         
         # Protocolo MCP (Memory)
         self.memory_enabled = memory
@@ -208,8 +215,7 @@ Background: {self.backstory}
         # Por enquanto, execução básica sem ferramentas
         # TODO: Implementar lógica de seleção e uso de ferramentas
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        return self.llm.generate_text(prompt)
     
     def _setup_handlers(self):
         """Configura handlers A2A específicos"""

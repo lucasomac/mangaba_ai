@@ -1,12 +1,54 @@
 #!/usr/bin/env python3
 """
 Script de verificação rápida - Testa se o ambiente está ok
-Não requer GOOGLE_API_KEY configurada
+Não requer API configurada
 """
 
 import os
 import sys
 from pathlib import Path
+
+PROVIDER_ALIAS = {
+    'gemini': 'google',
+    'google-ai': 'google',
+    'googleai': 'google',
+    'gpt': 'openai',
+    'chatgpt': 'openai',
+    'claude': 'anthropic',
+    'hf': 'huggingface',
+    'hugging-face': 'huggingface'
+}
+
+PROVIDER_KEYS = {
+    'google': ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+    'openai': ['OPENAI_API_KEY'],
+    'anthropic': ['ANTHROPIC_API_KEY'],
+    'huggingface': ['HUGGINGFACE_API_KEY', 'HUGGINGFACE_TOKEN', 'HF_TOKEN', 'HUGGINGFACEHUB_API_TOKEN']
+}
+
+PROVIDER_SIGNUP = {
+    'google': 'https://makersuite.google.com/app/apikey',
+    'openai': 'https://platform.openai.com/api-keys',
+    'anthropic': 'https://console.anthropic.com/account/keys',
+    'huggingface': 'https://huggingface.co/settings/tokens'
+}
+
+
+def resolve_provider() -> str:
+    provider = (os.getenv("LLM_PROVIDER") or "google").lower()
+    return PROVIDER_ALIAS.get(provider, provider)
+
+
+def resolve_provider_key():
+    provider = resolve_provider()
+    for candidate in PROVIDER_KEYS.get(provider, []):
+        value = os.getenv(candidate)
+        if value:
+            return provider, candidate, value
+    fallback = os.getenv("API_KEY")
+    if fallback:
+        return provider, "API_KEY", fallback
+    return provider, None, None
 
 def print_header(text):
     print("\n" + "="*70)
@@ -74,6 +116,9 @@ def main():
     
     deps = {
         "google.generativeai": "Google Gemini API",
+        "openai": "Cliente OpenAI",
+        "anthropic": "Cliente Anthropic",
+        "huggingface_hub": "Cliente Hugging Face",
         "dotenv": "Carregador de variáveis",
         "loguru": "Sistema de logging",
         "pydantic": "Validação de dados",
@@ -101,16 +146,19 @@ def main():
         from dotenv import load_dotenv
         load_dotenv(env_file)
         
-        api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+        provider = resolve_provider()
+        _, key_name, api_key = resolve_provider_key()
         model = os.getenv("MODEL_NAME", "gemini-2.5-flash")
         log_level = os.getenv("LOG_LEVEL", "INFO")
         
         if api_key:
-            print_success(f"GOOGLE_API_KEY: Configurada (primeiros 10 chars: {api_key[:10]}...)")
+            print_success(f"{key_name}: Configurada (provedor: {provider})")
         else:
-            print_warning(f"GOOGLE_API_KEY: ⏳ Vazia (configure antes de usar)")
+            expected = PROVIDER_KEYS.get(provider, ["API_KEY"])[0]
+            print_warning(f"{expected}: ⏳ Vazia (configure antes de usar)")
             env_ok = False
         
+        print_info(f"LLM_PROVIDER: {provider}")
         print_info(f"MODEL_NAME: {model}")
         print_info(f"LOG_LEVEL: {log_level}")
     else:
@@ -123,28 +171,36 @@ def main():
     imports_ok = True
     
     try:
-        import google.generativeai as genai
+        import google.generativeai  # noqa: F401
         print_success("google.generativeai importado")
     except Exception as e:
         print_error(f"google.generativeai: {e}")
         imports_ok = False
     
+    for module_name in ("openai", "anthropic", "huggingface_hub"):
+        try:
+            __import__(module_name)
+            print_success(f"{module_name} importado")
+        except Exception as exc:
+            print_error(f"{module_name}: {exc}")
+            imports_ok = False
+    
     try:
-        from dotenv import load_dotenv
+        from dotenv import load_dotenv  # noqa: F401
         print_success("dotenv importado")
     except Exception as e:
         print_error(f"dotenv: {e}")
         imports_ok = False
     
     try:
-        from loguru import logger
+        from loguru import logger  # noqa: F401
         print_success("loguru importado")
     except Exception as e:
         print_error(f"loguru: {e}")
         imports_ok = False
     
     try:
-        from pydantic import BaseModel
+        from pydantic import BaseModel  # noqa: F401
         print_success("pydantic importado")
     except Exception as e:
         print_error(f"pydantic: {e}")
@@ -154,7 +210,8 @@ def main():
     print_header("RESUMO DE STATUS")
     
     all_critical_ok = files_ok and dirs_ok and deps_ok and imports_ok
-    api_key_configured = os.getenv("GOOGLE_API_KEY", "").strip() != ""
+    _, _, configured_key = resolve_provider_key()
+    api_key_configured = bool(configured_key)
     
     print(f"\n  📁 Estrutura do projeto:  {'✅ OK' if files_ok and dirs_ok else '❌ PROBLEMAS'}")
     print(f"  📦 Dependências:         {'✅ OK' if deps_ok else '❌ PROBLEMAS'}")
@@ -173,12 +230,15 @@ def main():
             print("    3. Leia a documentação em docs/")
             return 0
         else:
+            provider = resolve_provider()
+            expected = PROVIDER_KEYS.get(provider, ["API_KEY"])[0]
+            signup_url = PROVIDER_SIGNUP.get(provider, "URL do provedor correspondente")
             print("  ⚠️  AMBIENTE PRONTO, MAS FALTA CONFIGURAÇÃO")
             print("\n  O que fazer:")
-            print("    1. Obtenha sua GOOGLE_API_KEY em:")
-            print("       https://makersuite.google.com/app/apikey")
+            print(f"    1. Obtenha a chave do provedor '{provider}' em:")
+            print(f"       {signup_url}")
             print("    2. Adicione ao arquivo .env:")
-            print("       GOOGLE_API_KEY=AIza...sua_chave...")
+            print(f"       {expected}=sua_chave_aqui")
             print("    3. Depois execute:")
             print("       python examples/basic_example.py")
             return 0

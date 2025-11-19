@@ -27,6 +27,7 @@ Repositório minimalista para criação de agentes de IA inteligentes e versáte
 - 🔗 **Protocolo A2A**: Comunicação entre agentes
 - 🧠 **Protocolo MCP**: Gerenciamento avançado de contexto
 - 📝 **Funcionalidades Integradas**: Chat, análise, tradução e mais
+- 🌐 **Multi-LLM Real**: Google Gemini, OpenAI GPT, Anthropic Claude e Hugging Face
 - ⚡ **Configuração Simples**: Apenas 2 passos para começar
 
 ## 🚀 Instalação Rápida
@@ -100,12 +101,21 @@ copy .env.example .env  # Windows
 
 Edite `.env` e adicione sua chave:
 ```env
-GOOGLE_API_KEY=sua_chave_aqui
+LLM_PROVIDER=google  # ou openai | anthropic | huggingface
+# Informe apenas a chave correspondente ao provedor escolhido
+GOOGLE_API_KEY=sua_chave_google
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+HUGGINGFACE_API_KEY=
 MODEL_NAME=gemini-2.5-flash
 LOG_LEVEL=INFO
 ```
 
-Obtenha sua chave em: https://makersuite.google.com/app/apikey
+Obtenha sua chave nos provedores suportados:
+- Google Gemini: https://makersuite.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys
+- Anthropic: https://console.anthropic.com/account/keys
+- Hugging Face: https://huggingface.co/settings/tokens
 
 </details>
 
@@ -172,7 +182,11 @@ copy .env.example .env    # Windows
 2. **Edite o arquivo .env:**
 ```env
 # Obrigatório
-GOOGLE_API_KEY=sua_chave_google_api_aqui
+LLM_PROVIDER=google  # google | openai | anthropic | huggingface
+GOOGLE_API_KEY=sua_chave_google
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+HUGGINGFACE_API_KEY=
 
 # Opcional (com valores padrão)
 MODEL_NAME=gemini-2.5-flash
@@ -180,10 +194,28 @@ AGENT_NAME=MangabaAgent
 LOG_LEVEL=INFO
 ```
 
-3. **Obtenha sua Google API Key:**
-   - Acesse: https://makersuite.google.com/app/apikey
-   - Crie uma nova chave
-   - Cole no arquivo .env
+3. **Obtenha sua chave no provedor escolhido:**
+   - Google Gemini: https://makersuite.google.com/app/apikey
+   - OpenAI: https://platform.openai.com/api-keys
+   - Anthropic: https://console.anthropic.com/account/keys
+   - Hugging Face: https://huggingface.co/settings/tokens
+
+### 🌐 Selecionando o Provedor LLM
+
+No arquivo `.env`, defina qual motor de IA deseja utilizar:
+
+```env
+LLM_PROVIDER=google  # google | openai | anthropic | huggingface
+```
+
+| Provedor      | Variável de API Key            | Modelo padrão (`MODEL_NAME`)          |
+|---------------|--------------------------------|---------------------------------------|
+| `google`      | `GOOGLE_API_KEY`               | `gemini-2.5-flash`                    |
+| `openai`      | `OPENAI_API_KEY`               | `gpt-4o-mini`                         |
+| `anthropic`   | `ANTHROPIC_API_KEY`            | `claude-3-haiku-20240307`             |
+| `huggingface` | `HUGGINGFACE_API_KEY` / `HF_TOKEN` | `mistralai/Mistral-7B-Instruct-v0.2` |
+
+👉 Informe **apenas** a chave do provedor selecionado. Trocar de provider exige apenas atualizar `LLM_PROVIDER` (e opcionalmente `MODEL_NAME`).
 
 ### 🔍 Validação do Ambiente
 

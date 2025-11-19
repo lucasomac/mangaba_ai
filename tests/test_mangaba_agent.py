@@ -21,17 +21,13 @@ class TestMangabaAgent:
     """Testes para a classe MangabaAgent"""
     
     @pytest.fixture
-    def mock_genai(self):
-        """Mock para Google Generative AI"""
-        with patch('google.generativeai.configure') as mock_configure, \
-             patch('google.generativeai.GenerativeModel') as mock_model:
-            
-            # Mock do modelo
-            mock_instance = Mock()
-            mock_instance.generate_content.return_value.text = "Resposta mockada do AI"
-            mock_model.return_value = mock_instance
-            
-            yield mock_configure, mock_model, mock_instance
+    def mock_llm(self):
+        """Mock para cliente LLM genérico"""
+        with patch('mangaba_agent.create_llm_client') as mock_factory:
+            mock_client = Mock()
+            mock_client.generate_text.return_value = "Resposta mockada do AI"
+            mock_factory.return_value = mock_client
+            yield mock_factory, mock_client
     
     @pytest.fixture
     def mock_config(self):
@@ -43,11 +39,11 @@ class TestMangabaAgent:
             yield mock_cfg
     
     @pytest.fixture
-    def agent(self, mock_genai, mock_config):
+    def agent(self, mock_llm, mock_config):
         """Fixture para criar um agente de teste"""
         return MangabaAgent(api_key="test_key", model="test-model")
     
-    def test_agent_initialization(self, mock_genai, mock_config):
+    def test_agent_initialization(self, mock_llm, mock_config):
         """Testa inicialização do agente"""
         agent = MangabaAgent(api_key="test_key", model="test-model")
         
@@ -58,27 +54,27 @@ class TestMangabaAgent:
         assert hasattr(agent, 'mcp')
         assert hasattr(agent, 'current_session_id')
     
-    def test_agent_initialization_without_mcp(self, mock_genai, mock_config):
+    def test_agent_initialization_without_mcp(self, mock_llm, mock_config):
         """Testa inicialização do agente sem MCP"""
         agent = MangabaAgent(api_key="test_key", enable_mcp=False)
         
         assert agent.mcp_enabled is False
         assert not hasattr(agent, 'mcp')
     
-    def test_chat_basic(self, agent, mock_genai):
+    def test_chat_basic(self, agent, mock_llm):
         """Testa funcionalidade básica de chat"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Olá! Como posso ajudar?"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Olá! Como posso ajudar?"
         
         response = agent.chat("Olá")
         
         assert response == "Olá! Como posso ajudar?"
-        mock_instance.generate_content.assert_called_once()
+        mock_client.generate_text.assert_called_once()
     
-    def test_chat_with_context(self, agent, mock_genai):
+    def test_chat_with_context(self, agent, mock_llm):
         """Testa chat com contexto MCP"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Resposta com contexto"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Resposta com contexto"
         
         response = agent.chat("Teste com contexto", use_context=True)
         
@@ -86,10 +82,10 @@ class TestMangabaAgent:
         # Verifica se o contexto foi adicionado ao MCP
         assert len(agent.mcp.contexts) > 0
     
-    def test_chat_without_context(self, agent, mock_genai):
+    def test_chat_without_context(self, agent, mock_llm):
         """Testa chat sem usar contexto MCP"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Resposta sem contexto"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Resposta sem contexto"
         
         initial_context_count = len(agent.mcp.contexts)
         response = agent.chat("Teste sem contexto", use_context=False)
@@ -98,25 +94,25 @@ class TestMangabaAgent:
         # Verifica se não foi adicionado contexto
         assert len(agent.mcp.contexts) == initial_context_count
     
-    def test_analyze_text(self, agent, mock_genai):
+    def test_analyze_text(self, agent, mock_llm):
         """Testa análise de texto"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Análise: Texto positivo"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Análise: Texto positivo"
         
         response = agent.analyze_text("Texto para análise", "Analise o sentimento")
         
         assert response == "Análise: Texto positivo"
-        mock_instance.generate_content.assert_called_once()
+        mock_client.generate_text.assert_called_once()
     
-    def test_translate(self, agent, mock_genai):
+    def test_translate(self, agent, mock_llm):
         """Testa tradução de texto"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Hello world"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Hello world"
         
         response = agent.translate("Olá mundo", "inglês")
         
         assert response == "Hello world"
-        mock_instance.generate_content.assert_called_once()
+        mock_client.generate_text.assert_called_once()
     
     def test_get_context_summary(self, agent):
         """Testa obtenção do resumo de contexto"""
@@ -129,10 +125,10 @@ class TestMangabaAgent:
         assert isinstance(summary, str)
         assert "contextos" in summary.lower()
     
-    def test_handle_mangaba_request_chat(self, agent, mock_genai):
+    def test_handle_mangaba_request_chat(self, agent, mock_llm):
         """Testa handler de requisição A2A para chat"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Resposta via A2A"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Resposta via A2A"
         
         message = A2AMessage.create(
             sender_id="test_sender",
@@ -148,10 +144,10 @@ class TestMangabaAgent:
             agent.handle_mangaba_request(message)
             mock_send.assert_called_once()
     
-    def test_handle_mangaba_request_analyze(self, agent, mock_genai):
+    def test_handle_mangaba_request_analyze(self, agent, mock_llm):
         """Testa handler de requisição A2A para análise"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.return_value.text = "Análise via A2A"
+        _, mock_client = mock_llm
+        mock_client.generate_text.return_value = "Análise via A2A"
         
         message = A2AMessage.create(
             sender_id="test_sender",
@@ -212,16 +208,16 @@ class TestMangabaAgent:
             assert "Broadcast enviado" in result
             mock_send.assert_called_once()
     
-    def test_error_handling_in_chat(self, agent, mock_genai):
+    def test_error_handling_in_chat(self, agent, mock_llm):
         """Testa tratamento de erro no chat"""
-        _, _, mock_instance = mock_genai
-        mock_instance.generate_content.side_effect = Exception("API Error")
+        _, mock_client = mock_llm
+        mock_client.generate_text.side_effect = Exception("API Error")
         
         response = agent.chat("Teste de erro")
         
         assert "Erro" in response or "erro" in response
     
-    def test_agent_id_uniqueness(self, mock_genai, mock_config):
+    def test_agent_id_uniqueness(self, mock_llm, mock_config):
         """Testa se IDs de agentes são únicos"""
         agent1 = MangabaAgent()
         agent2 = MangabaAgent()
@@ -230,7 +226,7 @@ class TestMangabaAgent:
         assert agent1.agent_id.startswith("mangaba_")
         assert agent2.agent_id.startswith("mangaba_")
     
-    def test_custom_agent_id(self, mock_genai, mock_config):
+    def test_custom_agent_id(self, mock_llm, mock_config):
         """Testa criação de agente com ID customizado"""
         custom_id = "custom_agent_123"
         agent = MangabaAgent(agent_id=custom_id)
