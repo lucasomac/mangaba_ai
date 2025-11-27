@@ -62,7 +62,7 @@ uv sync
 uv run python examples/basic_example.py
 ```
 
-> 💡 **Novo em UV?** [Guia completo de comandos UV](COMANDOS_UV.md) • [Como usar UV](COMO_USAR_UV.md)
+> 💡 **Novo em UV?** [Guia completo de UV](docs/UV_SETUP.md) • [Migração pip para UV](docs/MIGRACAO_PIP_UV.md)
 
 ### 🐍 Opção B: Com pip (tradicional)
 
@@ -590,8 +590,8 @@ mangaba_ai/
 │   ├── setup_env.py            # Setup manual detalhado
 │   └── README.md               # Documentação dos scripts
 ├── 📁 protocols/               # 🌐 Protocolos de comunicação
-│   ├── mcp_protocol.py         # Model Context Protocol
-│   └── a2a_protocol.py         # Agent-to-Agent Protocol
+│   ├── mcp.py                  # Model Context Protocol
+│   └── a2a.py                  # Agent-to-Agent Protocol
 ├── 📁 examples/                # 📖 Exemplos de uso
 │   └── basic_example.py        # Exemplo básico completo
 ├── 📁 utils/                   # 🛠️ Utilitários

@@ -30,7 +30,7 @@ class QuickSetup:
     """Classe para configuração rápida do projeto"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent
+        self.project_root = Path(__file__).parent.parent
         self.env_file = self.project_root / '.env'
         self.env_template = self.project_root / '.env.template'
         self.venv_path = self.project_root / 'venv'

@@ -64,7 +64,7 @@ def clean_agent(mock_llm_client, test_config):
 @pytest.fixture
 def a2a_protocol():
     """Fixture para protocolo A2A"""
-    return A2AProtocol()
+    return A2AProtocol("test_agent")
 
 
 @pytest.fixture
@@ -143,11 +143,11 @@ def connected_agents(mock_llm_client, test_config):
         )
         agents.append(agent)
     
-    # Conecta todos os agentes entre si
+    # Conecta todos os agentes entre si usando connect_to
     for i, agent in enumerate(agents):
         for j, other_agent in enumerate(agents):
             if i != j:
-                agent.a2a_protocol.connect_agent(other_agent.a2a_protocol)
+                agent.connect_to(other_agent)
     
     return agents
 
