@@ -5,6 +5,20 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-02-13
+
+### Corrigido
+- 🔗 URLs do GitHub agora usam branch correto: `/blob/master/` em vez de `/blob/main/`
+- ✅ Todos os links da documentação funcionam corretamente no GitHub e PyPI
+- 🌐 Branches desnecessários removidos (main e copilot)
+- 📚 Mantido apenas branch master como padrão
+
+### Garantido
+- ✓ Links para WIKI.md funcionam
+- ✓ Links para README.md (índice) funcionam
+- ✓ Links para todos os arquivos de documentação funcionam
+- ✓ URLs corretas: `github.com/Mangaba-ai/mangaba_ai/blob/master/`
+
 ## [2.0.3] - 2026-02-13
 
 ### Corrigido
