@@ -5,6 +5,13 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-02-13
+
+### Corrigido
+- 🔗 URLs do GitHub corrigidas no README.md
+- ✅ Nome correto do repositório: `Mangaba-ai/mangaba_ai` (em vez de `mangaba-ai/mangaba-ai`)
+- 🌐 Todos os links da documentação agora funcionam corretamente
+
 ## [2.0.2] - 2026-02-13
 
 ### Corrigido
