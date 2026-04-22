@@ -238,7 +238,7 @@ mangaba/
 | **Google Gemini** | ✅ Nativo | ✅ | `gemini-2.5-flash` |
 | **OpenAI** | ✅ Nativo | ✅ | `gpt-4o-mini` |
 | **Anthropic** | ✅ Nativo (tool_use) | ✅ | `claude-3-haiku-20240307` |
-| **HuggingFace** | ⚠️ Prompt-based | ✅ | `mistralai/Mistral-7B-Instruct-v0.3` |
+| **HuggingFace** | ⚠️ Prompt-based | ✅ via `chat_completion` | `mistralai/Mistral-7B-Instruct-v0.3` |
 
 Configure via variáveis de ambiente:
 
@@ -249,6 +249,10 @@ GOOGLE_API_KEY=sua_chave
 ```
 
 ### 🤗 Modelos Open-Source HuggingFace
+
+> O provider HuggingFace usa a API `chat_completion` (OpenAI-compatible), que suporta streaming real token a token e system prompts em todos os modelos de instrução modernos.
+
+
 
 O Mangaba inclui um catálogo de **28 modelos open-source** disponíveis via HuggingFace Inference API, organizados por categoria:
 
