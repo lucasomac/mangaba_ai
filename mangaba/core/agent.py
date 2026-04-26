@@ -8,7 +8,7 @@ import logging
 import uuid
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
-from mangaba.core.types import AgentState, AgentStatus, LLMConfig, MemoryConfig
+from mangaba.core.types import AgentState, AgentStatus, LLMConfig, MemoryConfig, OpenRouterConfig
 from mangaba.core.exceptions import AgentError
 from mangaba.core.events import EventBus, Event, EventType
 from mangaba.core.reasoning import ReActEngine
@@ -216,37 +216,34 @@ class Agent:
         return text
 
     # ── LLM factory ────────────────────────────────────────────────────
-
     @staticmethod
     def _create_llm(provider_str: Optional[str], llm_config: Optional[LLMConfig], api_key: Optional[str]) -> Any:
-        """Build an LLMClient from config or fall back to global config."""
         from mangaba.core.llm import create_llm_client
-        try:
-            from config import config as global_cfg
-        except ImportError:
-            global_cfg = None  # type: ignore[assignment]
-
+    
+        # Use the provided config or create a default one
         cfg = llm_config or LLMConfig()
-
+    
+        # Basic parameters
         prov = provider_str or cfg.provider
-        if global_cfg:
-            prov = prov or getattr(global_cfg, "provider", "google")
         key = api_key or cfg.api_key
-        if not key and global_cfg:
-            key = getattr(global_cfg, "api_key", None)
         model = cfg.model
-        if not model and global_cfg:
-            model = getattr(global_cfg, "model", None)
-        if not model:
-            model = "gemini-2.5-flash"
+    
+        # Initialize options dictionary
+        options = {
+            "temperature": cfg.temperature,
+            "max_output_tokens": cfg.max_tokens,
+        }
+
+        # If it's an OpenRouterConfig, we extract the extra fields
+        if isinstance(cfg, OpenRouterConfig):
+            options["site_name"] = cfg.site_name
+            options["site_url"] = cfg.site_url
+            if cfg.route:
+                options["route"] = cfg.route
 
         return create_llm_client(
             provider=prov,
             api_key=key or "",
             model=model,
-            temperature=cfg.temperature,
-            max_output_tokens=cfg.max_tokens,
+            **options
         )
-
-    def __repr__(self) -> str:
-        return f"Agent(role='{self.role}', tools={len(self.tools)}, id='{self.agent_id}')"

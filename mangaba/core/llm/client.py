@@ -735,6 +735,134 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
             return []
 
 
+
+# ---------------------------------------------------------------------------
+# OpenRouter
+# ---------------------------------------------------------------------------
+
+class OpenRouterLLMProvider(OpenAILLMProvider):
+    """
+    OpenRouter provider implementation for Mangaba AI.
+    Handles native fallback routing by formatting the OpenAI SDK payload 
+    specifically for OpenRouter's requirements.
+    """
+
+    name = "openrouter"
+    aliases = ("or", "open-router")
+
+    def __init__(self, api_key: str, model: Union[str, List[str]], **options: Any) -> None:
+        # Configuration defaults for the OpenRouter endpoint
+        base_url = options.get("base_url") or "https://openrouter.ai/api/v1"
+        site_url = options.get("site_url", "https://www.mangaba.ia.br/")
+        site_name = options.get("site_name", "Mangaba AI")
+
+        # Initialize base OpenAI provider
+        super().__init__(api_key, model, **options)
+
+        from openai import OpenAI
+        # Re-initialize the client with OpenRouter's base_url and identity headers
+        self._client = OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            default_headers={
+                "HTTP-Referer": site_url,
+                "X-Title": site_name,
+            }
+        )
+
+    def _get_call_params(self, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Ensures the 'model' is a single string and the fallback list 
+        is moved to 'extra_body' to satisfy OpenRouter's API.
+        """
+        # Ensure we have a string for the SDK's 'model' parameter
+        if isinstance(self.model, list):
+            primary_model = self.model[0]
+            # OpenRouter fallback list goes into extra_body.models
+            extra_body = kwargs.get("extra_body", {})
+            extra_body["models"] = self.model
+            kwargs["extra_body"] = extra_body
+        else:
+            primary_model = self.model
+
+        # Extract standard generation options
+        params = {
+            "model": primary_model,
+            "temperature": kwargs.get("temperature", self._temperature),
+            "max_tokens": kwargs.get("max_output_tokens", self._max_tokens),
+            "extra_body": kwargs.get("extra_body"),
+            "stream": kwargs.get("stream", False),
+        }
+        
+        # Merge any other extra arguments (like top_p, etc)
+        return {k: v for k, v in params.items() if v is not None}
+
+    def generate(self, prompt: str, **kwargs: Any) -> LLMResponse:
+        # Build standard message format
+        messages = self._build_messages(prompt, kwargs.pop("system_prompt", None))
+        params = self._get_call_params(**kwargs)
+        
+        try:
+            # We call the client directly to avoid parent class parameter conflicts
+            resp = self._client.chat.completions.create(
+                messages=messages,
+                **params
+            )
+            usage = self._parse_usage(resp)
+            return LLMResponse(
+                content=resp.choices[0].message.content or "", 
+                usage=usage, 
+                model=params["model"], 
+                raw=resp
+            )
+        except Exception as exc:
+            self._handle_openai_error(exc)
+            raise LLMError(f"OpenRouter generation error: {exc}", cause=exc) from exc
+
+    def generate_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: Optional[List[Any]] = None,
+        **kwargs: Any,
+    ) -> LLMResponse:
+        # Critical for the ReActEngine to work with fallbacks
+        params = self._get_call_params(**kwargs)
+        
+        # Convert Mangaba tools to OpenAI-compatible schemas
+        if tools:
+            params["tools"] = [_tool_to_openai_schema(t) for t in tools]
+
+        try:
+            resp = self._client.chat.completions.create(
+                messages=messages,
+                **params
+            )
+            
+            msg = resp.choices[0].message
+            tool_calls: List[ToolCall] = []
+            
+            if msg.tool_calls:
+                for tc in msg.tool_calls:
+                    import json
+                    args = json.loads(tc.function.arguments) if tc.function.arguments else {}
+                    tool_calls.append(ToolCall(id=tc.id, tool_name=tc.function.name, arguments=args))
+
+            finish = FinishReason.TOOL_CALLS if tool_calls else FinishReason.STOP
+            usage = self._parse_usage(resp)
+            
+            return LLMResponse(
+                content=msg.content or "",
+                tool_calls=tool_calls,
+                usage=usage,
+                model=params["model"],
+                finish_reason=finish,
+                raw=resp
+            )
+        except Exception as exc:
+            self._handle_openai_error(exc)
+            raise LLMError(f"OpenRouter tool-use error: {exc}", cause=exc) from exc
+
+
 # ---------------------------------------------------------------------------
 # Provider registry
 # ---------------------------------------------------------------------------
@@ -744,6 +872,7 @@ PROVIDERS: Dict[str, Type[BaseLLMProvider]] = {
     OpenAILLMProvider.name: OpenAILLMProvider,
     AnthropicLLMProvider.name: AnthropicLLMProvider,
     HuggingFaceLLMProvider.name: HuggingFaceLLMProvider,
+    OpenRouterLLMProvider.name: OpenRouterLLMProvider,
 }
 
 
@@ -833,6 +962,7 @@ class LLMClient:
     def _track_usage(self, usage: TokenUsage) -> None:
         if usage.total_tokens > 0:
             self._usage_tracker.append(usage)
+
 
 
 # ---------------------------------------------------------------------------

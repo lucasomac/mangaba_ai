@@ -58,7 +58,7 @@ class LLMConfig(BaseModel):
     """Configuration for an LLM provider."""
 
     provider: str = "google"
-    model: Optional[str] = None
+    model: Union[str, List[str]] = "gemini-2.5-flash"
     api_key: Optional[str] = None
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1024, ge=1)
@@ -75,9 +75,26 @@ class LLMConfig(BaseModel):
             "gpt": "openai", "chatgpt": "openai",
             "claude": "anthropic",
             "hf": "huggingface", "hugging-face": "huggingface",
+            "openrouter": "openrouter", "open-router":"openrouter", "or":"openrouter"
         }
         return aliases.get(v.lower(), v.lower())
 
+
+class OpenRouterConfig(LLMConfig):
+    """Specialized configuration for OpenRouter with fallback support."""
+    provider: str = "openrouter"
+    
+    # We can define a default fallback list here
+    model: List[str] = Field(
+        default_factory=lambda: ["google/gemini-2.5-flash", "anthropic/claude-3.5-sonnet"]
+    )
+    
+    # Specific OpenRouter headers
+    site_name: str = "Mangaba AI"
+    site_url: str = "https://www.mangaba.ia.br/"
+    
+    # OpenRouter routing preferences (cheap, fast, etc)
+    route: Optional[str] = None
 
 class TokenUsage(BaseModel):
     """Token usage statistics from an LLM call."""

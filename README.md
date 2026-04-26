@@ -5,14 +5,16 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/usuario/mangaba-ai/actions)
 
-**Framework profissional de orquestração multi-agente** com ReAct reasoning, function calling nativo, RAG, memória persistente e suporte a 4 provedores LLM.
+**Framework profissional de orquestração multi-agente** com ReAct reasoning, function calling nativo, RAG, memória persistente e suporte resiliente a múltiplos provedores LLM.
 
-> Alternativa leve e completa a CrewAI + LangChain em um único pacote.
+> Alternativa leve e completa a CrewAI + LangChain em um único pacote, agora com interoperabilidade real entre provedores e arquitetura resiliente.
 
-## ✨ Destaques v3.0
+## ✨ Destaques v3.2.0
 
+- 🚀 **OpenRouter Native Support** — Roteamento dinâmico com fallback automático entre modelos
+- 🔄 **Multi-Provider Interoperability** — Misture agentes de diferentes provedores (ex: Gemini + Llama) na mesma Crew
 - 🧠 **ReAct Reasoning** — Loop Thought→Action→Observation com function calling nativo
-- 🤖 **4 Provedores LLM** — Google Gemini, OpenAI GPT, Anthropic Claude, HuggingFace
+- 🤖 **5 Provedores LLM** — Google Gemini, OpenAI GPT, Anthropic Claude, HuggingFace e OpenRouter
 - 👥 **4 Processos de Crew** — Sequential, Hierarchical, Parallel (asyncio), Consensual
 - 🔧 **Tool System** — `@tool` decorator, Pydantic schemas, JSON schema automático para LLM
 - 📚 **RAG Pipeline** — Document loaders, text splitters, embeddings, vector store, retriever
@@ -20,7 +22,8 @@
 - 🛡️ **Guardrails** — Validação de tamanho, filtro de conteúdo, schema validation
 - 📊 **Observabilidade** — EventBus com 22+ tipos de evento, callbacks console/arquivo
 - 🔄 **Workflow Engine** — Pipelines com stages sequenciais, paralelos e condicionais
-- ⚡ **Cache & Retry** — Cache LRU + disco (SQLite), retry com backoff exponencial
+- ⚡ **Cache & Retry** — Cache LRU + disco (SQLite), retry com backoff exponencial + fallback automático
+
 
 ## 🚀 Instalação
 
@@ -39,7 +42,8 @@ pip install mangaba[dev]
 ### Agente simples com ferramenta
 
 ```python
-from mangaba import Agent, Task, Crew, Process, tool
+from mangaba.core import Agent, Task, Crew, Process, tool
+from mangaba.core.types import LLMConfig
 
 @tool
 def search(query: str) -> str:
@@ -51,7 +55,7 @@ researcher = Agent(
     goal="Find accurate information",
     backstory="Expert researcher with 10 years of experience",
     tools=[search],
-    llm_config={"provider": "google", "api_key": "YOUR_KEY"},
+    llm_config= LLMConfig(provider = "google", model = "gemini-2.5-flash", api_key="sua-chave"),
 )
 
 task = Task(
@@ -63,6 +67,58 @@ task = Task(
 crew = Crew(
     agents=[researcher],
     tasks=[task],
+    process=Process.SEQUENTIAL,
+)
+
+result = crew.kickoff()
+print(result.final_output)
+```
+
+### Multi-Provider Crew com fallback (NOVO v3.2.0)
+
+```python
+from mangaba.core import Agent, Task, Crew
+from mangaba.core.crew import Process
+from mangaba.core.types import OpenRouterConfig, LLMConfig
+
+pesquisador = Agent(
+    role="Pesquisador",
+    goal="Analisar vulnerabilidades",
+    llm_config=OpenRouterConfig(
+        provider="openrouter",
+        model=[
+            "google/gemini-2.5-flash",
+            "anthropic/claude-3.5-sonnet"
+        ],
+        api_key="SUA_KEY"
+    )
+)
+
+revisor = Agent(
+    role="Revisor",
+    goal="Revisar análise técnica",
+    llm_config=LLMConfig(
+        provider="hf",
+        model="meta-llama/Meta-Llama-3-8B-Instruct",
+        api_key="SUA_KEY"
+    )
+)
+
+task = Task(
+    description="Explique buffer overflow",
+    expected_output="Análise técnica detalhada",
+    agent=pesquisador,
+)
+
+review = Task(
+    description="Revise a análise",
+    expected_output="Pontos fortes e fracos",
+    agent=revisor,
+)
+
+crew = Crew(
+    agents=[pesquisador, revisor],
+    tasks=[task, review],
     process=Process.SEQUENTIAL,
 )
 
@@ -189,7 +245,7 @@ mangaba/
 │   ├── exceptions.py       # Hierarquia de exceções
 │   ├── events.py           # EventBus (22+ event types)
 │   └── llm/                # Engine LLM multi-provider
-│       ├── client.py           # 4 providers + function calling + streaming
+│       ├── client.py           # 5 providers + OpenRouter + fallback + function calling + streaming
 │       ├── retry.py            # Retry com backoff exponencial
 │       ├── cache.py            # LRU (memória) + SQLite (disco)
 │       ├── token_counter.py    # Contagem de tokens
@@ -235,6 +291,7 @@ mangaba/
 
 | Provedor | Function Calling | Streaming | Modelo Padrão |
 |---|---|---|---|
+| **OpenRouter** | ✅ Nativo + Fallback | ✅ | Multi-model routing |
 | **Google Gemini** | ✅ Nativo | ✅ | `gemini-2.5-flash` |
 | **OpenAI** | ✅ Nativo | ✅ | `gpt-4o-mini` |
 | **Anthropic** | ✅ Nativo (tool_use) | ✅ | `claude-3-haiku-20240307` |
@@ -245,7 +302,7 @@ Configure via variáveis de ambiente:
 ```env
 LLM_PROVIDER=google
 GOOGLE_API_KEY=sua_chave
-# ou OPENAI_API_KEY, ANTHROPIC_API_KEY, HUGGINGFACE_API_KEY
+# ou OPENAI_API_KEY, ANTHROPIC_API_KEY, HUGGINGFACE_API_KEY, OPENROUTER_API_KEY
 ```
 
 ### 🤗 Modelos Open-Source HuggingFace
@@ -331,4 +388,3 @@ MIT License
 
 ---
 
-**Mangaba AI v3.0** — Framework profissional de agentes IA 🥭🤖
