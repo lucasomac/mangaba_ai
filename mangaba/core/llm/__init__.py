@@ -1,15 +1,34 @@
-"""Helpers para lidar com múltiplos provedores de LLM."""
+"""LLM engine for Mangaba AI v3.0 — function calling, streaming, caching."""
 
 from .client import (
+    BaseLLMProvider,
     LLMClient,
-    LLMResponse,
     create_llm_client,
     get_supported_providers,
+    list_huggingface_models,
+    hf_model_supports_tools,
+    HF_OPEN_MODELS,
 )
+from .retry import with_retry
+from .cache import LLMCache, InMemoryCache, DiskCache
+from .token_counter import TokenCounter, UsageTracker
+from .prompt_templates import PromptTemplate, ChatPromptTemplate, SystemPromptBuilder
 
 __all__ = [
+    "BaseLLMProvider",
     "LLMClient",
-    "LLMResponse",
     "create_llm_client",
     "get_supported_providers",
+    "list_huggingface_models",
+    "hf_model_supports_tools",
+    "HF_OPEN_MODELS",
+    "with_retry",
+    "LLMCache",
+    "InMemoryCache",
+    "DiskCache",
+    "TokenCounter",
+    "UsageTracker",
+    "PromptTemplate",
+    "ChatPromptTemplate",
+    "SystemPromptBuilder",
 ]

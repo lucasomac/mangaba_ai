@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mangaba"
-version = "2.0.1"
-description = "Framework de Agentes IA com Multi-Agent Orchestration, Protocolos A2A e MCP"
+version = "3.3.0"
+description = "Professional multi-agent AI framework with ReAct reasoning, RAG, memory, and function calling"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -43,14 +43,45 @@ dependencies = [
     "huggingface-hub>=0.20.0",
     "python-dotenv>=0.19.0",
     "loguru>=0.6.0",
-    "pydantic>=1.8.0",
+    "pydantic>=2.0.0",
     "requests>=2.25.0",
     "websockets>=10.0",
+    "tiktoken>=0.5.0",
 ]
 
 [project.optional-dependencies]
 tools = [
     "duckduckgo-search>=3.9.0",
+]
+
+rag = [
+    "numpy>=1.24.0",
+]
+
+embeddings = [
+    "numpy>=1.24.0",
+    "sentence-transformers>=2.2.0",
+]
+
+redis = [
+    "redis>=5.0.0",
+]
+
+postgres = [
+    "psycopg[binary]>=3.1.0",
+]
+
+chroma = [
+    "chromadb>=0.4.0",
+]
+
+all = [
+    "duckduckgo-search>=3.9.0",
+    "numpy>=1.24.0",
+    "sentence-transformers>=2.2.0",
+    "redis>=5.0.0",
+    "psycopg[binary]>=3.1.0",
+    "chromadb>=0.4.0",
 ]
 
 dev = [
@@ -92,7 +123,7 @@ Source = "https://github.com/mangaba-ai/mangaba-ai"
 Documentation = "https://github.com/mangaba-ai/mangaba-ai#readme"
 
 [tool.hatch.build.targets.wheel]
-packages = ["mangaba", "mangaba_ai.py", "mangaba_agent.py", "config.py", "protocols", "utils"]
+packages = ["mangaba", "protocols", "utils"]
 
 [tool.uv]
 # Configurações específicas para o gerenciador uv
